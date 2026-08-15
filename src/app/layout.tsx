@@ -1,22 +1,82 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/Header"
-import Footer from "@/components/layout/Footer"
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const TITLE = "Carmen Silva - Arte";
+const NAME = "Carmen Silva Cruz";
+const DESC = "Obras a venda, exposições e trajetória artística de Carmen Silva.";
 
 export const metadata: Metadata = {
-  title: "Carmen Silva",
-  description: "Obras a venda, exposições e trajetória artística de Carmen Silva.",
+  metadataBase: new URL(siteUrl),
+
+  title: {
+    default: TITLE,
+    template: "%s | Carmen Silva - Arte",
+  },
+
+  description: DESC,
+
+  applicationName: TITLE,
+
+  authors: [
+    {
+      name: NAME,
+      url: siteUrl,
+    },
+  ],
+
+  creator: NAME,
+  publisher: NAME,
+
+  formatDetection: {
+    email: true,
+    address: true,
+    telephone: true,
+  },
+
+  alternates: {
+    canonical: "/",
+  },
+
+  //TODO: faltam icone opengraph e descricao da imagem
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: siteUrl,
+    siteName: TITLE,
+    title: TITLE,
+    description: DESC,
+    images: [
+      {
+        url: "/opengraph-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "",
+      },
+    ],
+  },
+
+  twitter: {
+     card: "summary_large_image",
+     title: TITLE,
+     description: DESC,
+     images: ["/opengraph-image.jpg"],
+   },
+
+   robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 }
 
 export default function RootLayout({

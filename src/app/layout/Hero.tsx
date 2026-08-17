@@ -1,6 +1,7 @@
 import Container from "@/components/ui/Container"
 import { Button } from "@/components/ui/Button"
 
+//TODO: adicionar carrossel e imagens
 export default function Hero() {
   return (
     <section className="relative isolate overflow-hidden mx-4 mt-6 bg-orange border-orange rounded-2xl text-white">
@@ -36,7 +37,6 @@ export default function Hero() {
           </div>
         </div>
         
-        //TODO: adicionar carrossel e imagens
         <div className="relative mx-auto w-full max-w-md md:max-w-none" aria-hidden="true">
           <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full border border-orange-secondary/50" />
           <div className="absolute -bottom-7 -left-7 z-20 h-28 w-28 bg-orange" />

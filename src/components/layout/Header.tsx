@@ -5,13 +5,7 @@ import Container from "@/components/ui/Container"
 import { Button } from "@/components/ui/Button"
 import { useEffect, useRef, useState } from "react"
 import { Menu, X } from "lucide-react";
-
-const navItems = [
-  { href: "/venda", label: "Venda" },
-  { href: "/exposicao", label: "Exposição" },
-  { href: "/sobre", label: "Sobre" },
-  { href: "/contato", label: "Contato" },
-]
+import { navItems } from "./navItems";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)

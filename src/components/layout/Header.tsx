@@ -40,7 +40,7 @@ export default function Header() {
       <Container>
         <div className="flex h-20 items-center justify-between">
           <Link href="/#" className="text-xl font-semibold">
-            Carmen Silva
+            Carmem Silva
           </Link>
 
           <nav className="hidden md:flex gap-6">

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button"
 export const metadata: Metadata = {
   title: "Contato",
   description:
-    "Entre em contato com Carmen Silva para conversar sobre obras, exposições e projetos.",
+    "Entre em contato com Carmem Silva para conversar sobre obras, exposições e projetos.",
 }
 
 const contactLinks = {
@@ -26,8 +26,8 @@ export default function ContatoPage() {
   return (
     <div className="overflow-hidden pb-6 pt-6 sm:pt-10">
       <Container>
-        <section className="relative overflow-hidden rounded-[2rem] bg-red px-6 py-12 text-white sm:px-10 sm:py-16 lg:px-16 lg:py-20">
-          <div aria-hidden="true" className="absolute -right-24 -top-24 size-72 rounded-full border-[34px] border-red-secondary/20" />
+        <section className="relative overflow-hidden rounded-4xl bg-red px-6 py-12 text-white sm:px-10 sm:py-16 lg:px-16 lg:py-20">
+          <div aria-hidden="true" className="absolute -right-24 -top-24 size-72 rounded-full border-34 border-red-secondary/20" />
           <div aria-hidden="true" className="absolute -bottom-20 left-[38%] size-52 rounded-full bg-orange/20 blur-2xl" />
 
           <div className="relative grid items-end gap-12 lg:grid-cols-[1.15fr_0.85fr]">
@@ -53,7 +53,7 @@ export default function ContatoPage() {
             href={contactLinks.whatsapp}
             target="_blank"
             rel="noreferrer"
-            className="group relative flex min-h-72 flex-col justify-between overflow-hidden rounded-[2rem] bg-orange p-7 text-white transition-transform duration-300 hover:-translate-y-1 sm:p-10"
+            className="group relative flex min-h-72 flex-col justify-between overflow-hidden rounded-4xl bg-orange p-7 text-white transition-transform duration-300 hover:-translate-y-1 sm:p-10"
           >
             <div className="flex items-start justify-between">
               <span className="flex size-14 items-center justify-center rounded-full bg-white/15">
@@ -66,12 +66,12 @@ export default function ContatoPage() {
               <h2 className="text-3xl font-semibold sm:text-4xl">Fale pelo WhatsApp</h2>
               <p className="mt-3 max-w-md text-white/80">Ideal para dúvidas sobre obras disponíveis e atendimento direto.</p>
             </div>
-            <div aria-hidden="true" className="absolute -bottom-24 -right-16 size-64 rounded-full border-[32px] border-white/10" />
+            <div aria-hidden="true" className="absolute -bottom-24 -right-16 size-64 rounded-full border-32 border-white/10" />
           </a>
 
           <a
             href={contactLinks.email}
-            className="group flex min-h-72 flex-col justify-between rounded-[2rem] bg-green-secondary p-7 text-red transition-transform duration-300 hover:-translate-y-1 sm:p-10"
+            className="group flex min-h-72 flex-col justify-between rounded-4xl bg-green-secondary p-7 text-red transition-transform duration-300 hover:-translate-y-1 sm:p-10"
           >
             <div className="flex items-start justify-between">
               <span className="flex size-14 items-center justify-center rounded-full bg-red text-white">
@@ -87,7 +87,7 @@ export default function ContatoPage() {
           </a>
         </section>
 
-        <section className="grid gap-8 rounded-[2rem] border border-red/20 bg-white px-6 py-8 text-black sm:px-10 sm:py-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+        <section className="grid gap-8 rounded-4xl border border-red/20 bg-white px-6 py-8 text-black sm:px-10 sm:py-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-green">Acompanhe o processo</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-red sm:text-4xl">Arte em movimento.</h2>

@@ -5,16 +5,16 @@ import Footer from "@/components/layout/Footer";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-const TITLE = "Carmen Silva - Arte";
-const NAME = "Carmen Silva Cruz";
-const DESC = "Obras a venda, exposições e trajetória artística de Carmen Silva.";
+const TITLE = "Carmem Silva - Arte";
+const NAME = "Carmem Silva Cruz";
+const DESC = "Obras a venda, exposições e trajetória artística de Carmem Silva.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
     default: TITLE,
-    template: "%s | Carmen Silva - Arte",
+    template: "%s | Carmem Silva - Arte",
   },
 
   description: DESC,

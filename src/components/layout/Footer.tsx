@@ -11,7 +11,7 @@ export default function Footer() {
       <Container>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between">
           <p className="max-w-sm pt-8 md:border-r pr-8 mb-8">
-            descrição da Carmen Silva
+            descrição da Carmem Silva
           </p>
           <div className="pt-8 flex flex-col gap-6 font-bold mb-8">
             Navegação
@@ -43,7 +43,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="py-10 text-sm border-t">
-          © {new Date().getFullYear()} Carmen Silva
+          © {new Date().getFullYear()} Carmem Silva
         </div>
       </Container>
     </footer>

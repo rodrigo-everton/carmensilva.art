@@ -6,7 +6,7 @@ import Container from "@/components/ui/Container"
 export const metadata: Metadata = {
   title: "Sobre",
   description:
-    "Conheça Carmen Silva, sua pesquisa artística e o universo de cor, forma e memória presente em suas obras.",
+    "Conheça Carmem Silva, sua pesquisa artística e o universo de cor, forma e memória presente em suas obras.",
 }
 
 const pillars = [
@@ -49,7 +49,7 @@ export default function SobrePage() {
 
             <div className="mt-16 lg:mt-28">
               <h1 className="max-w-3xl text-5xl font-semibold leading-[0.92] tracking-tight sm:text-6xl lg:text-7xl">
-                Carmen
+                Carmem
                 <span className="block text-red-hover">Silva.</span>
               </h1>
               <p className="mt-7 max-w-xl text-lg leading-relaxed text-white/85 sm:text-xl">
@@ -86,7 +86,7 @@ export default function SobrePage() {
             </h2>
             <div className="mt-10 grid gap-6 text-base leading-relaxed text-red/75 sm:grid-cols-2 sm:text-lg">
               <p>
-                O trabalho de Carmen Silva parte da observação e da experiência.
+                O trabalho de Carmem Silva parte da observação e da experiência.
                 Cada obra nasce de um encontro entre intenção e descoberta, em
                 um processo aberto ao inesperado.
               </p>

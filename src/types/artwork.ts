@@ -1,32 +1,6 @@
-export type ArtworkStatus =
-  | "available"
-  | "reserved"
-  | "sold"
-  | "exhibition"
+import type {
+  ARTWORKS_QUERY_RESULT,
+} from "@/sanity/types.generated"
 
-export type Artwork = {
-  id: string
-
-  title: string
-  slug: string
-
-  year?: number
-
-  description?: string
-
-  technique?: string
-
-  dimensions?: {
-    width?: number
-    height?: number
-    depth?: number
-    unit: "cm"
-  }
-
-  image: string
-  images?: string[]
-
-  status: ArtworkStatus
-
-  featured?: boolean
-}
+export type Artwork = ARTWORKS_QUERY_RESULT[number]
+export type ArtworkStatus = Artwork["status"]

@@ -1,9 +1,15 @@
 import ArtworkGrid from "@/components/artwork/ArtworkGrid"
 import Container from "@/components/ui/Container"
+import {sanityFetch} from "@/sanity/lib/live"
+import {ARTWORKS_QUERY} from "@/sanity/queries/artwork"
 
-import { artworks } from "@/data/artworks"
 
-export default function ObrasPage() {
+export default async function Exposicao() {
+  const {data: artworks} = await sanityFetch({
+    query: ARTWORKS_QUERY,
+    stega: false,
+  })
+
   return (
     <Container className="py-16">
       <div className="mb-12">

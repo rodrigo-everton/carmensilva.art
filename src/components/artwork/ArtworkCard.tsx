@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 import { Artwork } from "@/types/artwork"
+import { urlFor } from "@/sanity/lib/image"
 
 type ArtworkCardProps = {
   artwork: Artwork
@@ -17,8 +18,8 @@ export default function ArtworkCard({
     >
       <div className="relative aspect-4/5 overflow-hidden bg-neutral-100">
         <Image
-          src={artwork.image}
-          alt={artwork.title}
+          src={urlFor(artwork.image).width(800).height(1000).url()}
+          alt={artwork.image.alt ?? artwork.title}
           fill
           className="object-cover transition duration-500 group-hover:scale-[1.02]"
         />

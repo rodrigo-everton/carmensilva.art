@@ -15,7 +15,7 @@ export default function ArtworkCard({
       href={`/exposicao/${artwork.slug}`}
       className="group block sm:border-2 rounded-2xl p-2"
     >
-      <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100">
+      <div className="relative aspect-4/5 overflow-hidden bg-neutral-100">
         <Image
           src={artwork.image}
           alt={artwork.title}

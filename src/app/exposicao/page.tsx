@@ -20,7 +20,7 @@ export default async function Exposicao() {
   })
 
   return (
-    <div className="mb-[-5rem] min-h-screen pb-40">
+    <div className="mb-20 min-h-screen pb-40">
       {/* <div className="border-b border-stone-200 bg-white">
         <Container className="py-4">
           <nav aria-label="Navegação estrutural" className="flex items-center gap-2 text-sm text-stone-500">

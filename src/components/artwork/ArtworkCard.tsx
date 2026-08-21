@@ -1,28 +1,31 @@
 import Image from "next/image"
+import Link from "next/link"
+import {ArrowUpRight} from "lucide-react"
 
 import { Artwork } from "@/types/artwork"
 import { urlFor } from "@/sanity/lib/image"
 
 type ArtworkCardProps = {
   artwork: Artwork
+  showInquiry?: boolean
 }
 
 const statusStyles = {
   available: {
     label: "Disponível",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    className: "bg-green-secondary text-green-hover",
   },
   reserved: {
     label: "Reservada",
-    className: "border-amber-200 bg-amber-50 text-amber-800",
+    className: "bg-orange-secondary text-orange-hover",
   },
   exhibition: {
     label: "Em exposição",
-    className: "border-blue-200 bg-blue-50 text-blue-800",
+    className: "bg-red-secondary text-red-hover",
   },
   sold: {
     label: "Vendida",
-    className: "border-stone-200 bg-stone-100 text-stone-600",
+    className: "bg-red text-white",
   },
 } satisfies Record<Artwork["status"], {label: string; className: string}>
 
@@ -37,59 +40,85 @@ function formatDimensions(dimensions: Artwork["dimensions"]) {
 
 export default function ArtworkCard({
   artwork,
+  showInquiry = false,
 }: ArtworkCardProps) {
   const status = statusStyles[artwork.status]
   const dimensions = formatDimensions(artwork.dimensions)
 
   return (
-    <article className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="relative aspect-4/5 overflow-hidden bg-stone-100">
+    <article className="group overflow-hidden rounded-[2rem] border border-red/15 bg-white transition-transform duration-300 hover:-translate-y-1">
+      <div className="relative aspect-4/5 overflow-hidden bg-green-secondary">
         <Image
-          src={urlFor(artwork.image).width(800).height(1000).url()}
+          src={urlFor(artwork.image).width(900).height(1125).fit("crop").url()}
           alt={artwork.image.alt ?? artwork.title}
           fill
           sizes="(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) 50vw, 33vw"
-          className="object-cover transition duration-500 hover:scale-[1.015]"
+          className="object-cover transition duration-700 group-hover:scale-[1.025]"
         />
-        <span className={`absolute left-4 top-4 rounded-full border px-3 py-1 text-xs font-semibold ${status.className}`}>
+        <span className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-xs font-semibold ${status.className}`}>
           {status.label}
         </span>
       </div>
 
-      <div className="p-5 sm:p-6">
+      <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-4">
-          <h3 className="text-xl font-semibold leading-snug tracking-tight text-stone-950">
+          <h3 className="text-2xl font-semibold leading-snug tracking-tight text-red">
             {artwork.title}
           </h3>
           {artwork.year && (
-            <span className="shrink-0 pt-1 text-sm text-stone-500">
+            <span className="shrink-0 pt-1 text-sm font-semibold text-green">
               {artwork.year}
             </span>
           )}
         </div>
 
+        {artwork.description && (
+          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-red/65">
+            {artwork.description}
+          </p>
+        )}
+
         {(artwork.technique || dimensions) && (
-          <dl className="mt-5 space-y-2 border-t border-stone-100 pt-4 text-sm">
+          <dl className="mt-5 space-y-2 border-t border-red/15 pt-4 text-sm">
             {artwork.technique && (
               <div className="flex justify-between gap-4">
-                <dt className="text-stone-500">Técnica</dt>
-                <dd className="text-right text-stone-700">{artwork.technique}</dd>
+                <dt className="text-red/55">Técnica</dt>
+                <dd className="text-right text-red/80">{artwork.technique}</dd>
               </div>
             )}
             {dimensions && (
               <div className="flex justify-between gap-4">
-                <dt className="text-stone-500">Dimensões</dt>
-                <dd className="text-right text-stone-700">{dimensions}</dd>
+                <dt className="text-red/55">Dimensões</dt>
+                <dd className="text-right text-red/80">{dimensions}</dd>
               </div>
             )}
           </dl>
         )}
 
-        {artwork.catalogNumber && (
-          <p className="mt-5 text-xs uppercase tracking-[0.16em] text-stone-400">
-            Cat. {artwork.catalogNumber}
-          </p>
-        )}
+        <div className="mt-6 flex items-end justify-between gap-4">
+          {artwork.catalogNumber ? (
+            <p className="text-xs uppercase tracking-[0.16em] text-red/45">
+              Cat. {artwork.catalogNumber}
+            </p>
+          ) : (
+            <span />
+          )}
+
+          {showInquiry && artwork.status === "available" && (
+            <Link
+              href="/contato"
+              className="inline-flex items-center gap-2 font-semibold text-orange transition-colors hover:text-orange-hover"
+              aria-label={`Tenho interesse na obra ${artwork.title}`}
+            >
+              Tenho interesse
+              <ArrowUpRight
+                size={18}
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                aria-hidden="true"
+              />
+            </Link>
+          )}
+        </div>
       </div>
     </article>
   )

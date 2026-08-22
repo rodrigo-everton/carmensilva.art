@@ -13,7 +13,7 @@ export default function ArtworkGrid({
 }: ArtworkGridProps) {
   if (artworks.length === 0) {
     return (
-      <div className="rounded-[2rem] border border-dashed border-red/30 bg-white px-6 py-16 text-center">
+      <div className="rounded-4xl border border-dashed border-red/30 bg-white px-6 py-16 text-center">
         <h3 className="text-xl font-semibold text-red">Novas obras em breve</h3>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-red/65">
           A seleção está sendo atualizada. Entre em contato para conhecer os

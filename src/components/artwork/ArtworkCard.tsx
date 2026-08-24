@@ -46,7 +46,7 @@ export default function ArtworkCard({
   const dimensions = formatDimensions(artwork.dimensions)
 
   return (
-    <article className="group overflow-hidden rounded-[2rem] border border-red/15 bg-white transition-transform duration-300 hover:-translate-y-1">
+    <article className="group overflow-hidden rounded-4xl border border-red/15 bg-white transition-transform duration-300 hover:-translate-y-1">
       <div className="relative aspect-4/5 overflow-hidden bg-green-secondary">
         <Image
           src={urlFor(artwork.image).width(900).height(1125).fit("crop").url()}

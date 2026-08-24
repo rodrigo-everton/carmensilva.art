@@ -29,7 +29,7 @@ export default async function VendaPage() {
   return (
     <div className="overflow-hidden pb-8 pt-6 sm:pt-10">
       <Container>
-        <header className="relative overflow-hidden rounded-[2rem] bg-red px-6 py-12 text-white sm:px-10 sm:py-16 lg:px-16 lg:py-20">
+        <header className="relative overflow-hidden rounded-4xl bg-red px-6 py-12 text-white sm:px-10 sm:py-16 lg:px-16 lg:py-20">
           <div
             aria-hidden="true"
             className="absolute -right-20 -top-24 size-72 rounded-full border-[2.25rem] border-red-secondary/20"
@@ -94,7 +94,7 @@ export default async function VendaPage() {
           <ArtworkGrid artworks={saleArtworks} showInquiry />
         </section>
 
-        <section className="relative overflow-hidden rounded-[2rem] bg-orange px-6 py-12 text-white sm:px-10 sm:py-14 lg:flex lg:items-center lg:justify-between lg:px-14">
+        <section className="relative overflow-hidden rounded-4xl bg-orange px-6 py-12 text-white sm:px-10 sm:py-14 lg:flex lg:items-center lg:justify-between lg:px-14">
           <div
             aria-hidden="true"
             className="absolute -bottom-20 -right-10 size-60 rounded-full border-[1.75rem] border-orange-secondary/30"

@@ -8,27 +8,18 @@ export type SaleStatus =
     | "completed"
     | "cancelled"
 
-export type PaymentStatus =
-    | "not_created"
-    | "pending"
-    | "approved"
-    | "rejected"
-    | "refunded"
-
 export type Sale = {
   id: string
+
   artworkId: string
   customerId: string
+  conversationId: string | null
 
   negotiatedPrice: string
-
-  paymentMethod: string
-  paymentStatus: PaymentStatus
-
-  deliveryMethod: string
-  deliveryStatus: string
+  currency: string
 
   saleStatus: SaleStatus
 
   createdAt: string
+  updatedAt: string
 }

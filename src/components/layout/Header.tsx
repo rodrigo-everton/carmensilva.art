@@ -49,7 +49,7 @@ export default function Header() {
                 {label}
               </Link>
             ))}
-            <Button variant="ghostwhite" href="/login"> Login </Button>
+            <Button variant="ghostwhite" href="/login">Entrar</Button>
           </nav>
 
           <div ref={menuRef} className="relative md:hidden">
@@ -80,6 +80,13 @@ export default function Header() {
                       {item.label}
                     </Link>
                   ))}
+                  <Link
+                      href="/login"
+                      className="w-full rounded-md px-3 py-2 text-right text-sm font-semibold bg-green-secondary text-orange transition-colors hover:bg-orange-secondary hover:text-orange-hover"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Entrar
+                    </Link>
                 </div>
               </div>
             )}

@@ -3,6 +3,7 @@ import { LogOut, ShieldCheck, UserRound } from "lucide-react"
 import { redirect } from "next/navigation"
 
 import Container from "@/components/ui/Container"
+import { isAdmin } from "@/lib/auth"
 import { createClient } from "@/sanity/lib/supabase/server"
 
 import { logout } from "../login/actions"
@@ -23,6 +24,10 @@ export default async function ContaPage() {
 
   if (!user) {
     redirect("/login")
+  }
+
+  if (await isAdmin(user)) {
+    redirect("/admin")
   }
 
   const nome =

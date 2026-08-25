@@ -4,6 +4,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import Container from "@/components/ui/Container"
+import { getAuthenticatedDestination } from "@/lib/auth"
 import { createClient } from "@/sanity/lib/supabase/server"
 
 import LoginForm from "./LoginForm"
@@ -24,7 +25,7 @@ export default async function LoginPage() {
   } = await supabase.auth.getUser()
 
   if (user) {
-    redirect("/conta")
+    redirect(await getAuthenticatedDestination(user))
   }
 
   return (

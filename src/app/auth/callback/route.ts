@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { getAuthenticatedDestination } from "@/lib/auth"
 import { createClient } from "@/sanity/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
@@ -7,10 +8,12 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      return NextResponse.redirect(new URL("/conta", request.url))
+      return NextResponse.redirect(
+        new URL(await getAuthenticatedDestination(data.user), request.url),
+      )
     }
   }
 

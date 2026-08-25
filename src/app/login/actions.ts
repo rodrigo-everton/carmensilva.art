@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation"
 
+import { getAuthenticatedDestination } from "@/lib/auth"
 import { createClient } from "@/sanity/lib/supabase/server"
 
 export type LoginState = {
@@ -24,13 +25,16 @@ export async function login(
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
   if (error) {
     return { error: "E-mail ou senha inválidos. Tente novamente." }
   }
 
-  redirect("/conta")
+  redirect(await getAuthenticatedDestination(data.user))
 }
 
 export async function logout() {

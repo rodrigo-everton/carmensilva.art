@@ -3,6 +3,7 @@
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
+import { getAuthenticatedDestination } from "@/lib/auth"
 import { createClient } from "@/sanity/lib/supabase/server"
 
 export type CadastroState = {
@@ -73,7 +74,7 @@ export async function cadastrar(
   }
 
   if (data.session) {
-    redirect("/conta")
+    redirect(await getAuthenticatedDestination(data.user))
   }
 
   return { success: true, email }

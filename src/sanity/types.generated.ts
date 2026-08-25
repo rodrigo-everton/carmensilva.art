@@ -228,10 +228,39 @@ export type ARTWORKS_QUERY_RESULT = Array<{
   catalogNumber: string | null;
 }>;
 
+// Source: src/sanity/queries/artwork.ts
+// Variable: ARTWORK_INTEREST_QUERY
+// Query: *[_type == "artwork" && _id == $id && status == "available"][0] {    "id": _id,    title,    status  }
+export type ARTWORK_INTEREST_QUERY_RESULT = {
+  id: string;
+  title: string;
+  status: "available" | "exhibition" | "reserved" | "sold";
+} | null;
+
+// Source: src/sanity/queries/artwork.ts
+// Variable: ARTWORKS_BY_IDS_QUERY
+// Query: *[_type == "artwork" && _id in $ids] {    "id": _id,    title,    year,    technique,    dimensions,    status,    catalogNumber  }
+export type ARTWORKS_BY_IDS_QUERY_RESULT = Array<{
+  id: string;
+  title: string;
+  year: number | null;
+  technique: string | null;
+  dimensions: {
+    width?: number;
+    height?: number;
+    depth?: number;
+    unit?: "cm";
+  } | null;
+  status: "available" | "exhibition" | "reserved" | "sold";
+  catalogNumber: string | null;
+}>;
+
 // Query TypeMap
 import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
     '\n  *[_type == "artwork" && status in $statuses] | order(year desc) {\n    "id": _id,\n    title,\n    "slug": slug.current,\n    year,\n    description,\n    technique,\n    dimensions,\n    "image": mainImage {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    images[] {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    status,\n    featured,\n    catalogNumber\n  }\n': ARTWORKS_QUERY_RESULT;
+    '\n  *[_type == "artwork" && _id == $id && status == "available"][0] {\n    "id": _id,\n    title,\n    status\n  }\n': ARTWORK_INTEREST_QUERY_RESULT;
+    '\n  *[_type == "artwork" && _id in $ids] {\n    "id": _id,\n    title,\n    year,\n    technique,\n    dimensions,\n    status,\n    catalogNumber\n  }\n': ARTWORKS_BY_IDS_QUERY_RESULT;
   }
 }

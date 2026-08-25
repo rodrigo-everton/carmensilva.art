@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
 import { getAuthenticatedDestination } from "@/lib/auth"
+import {consumePendingArtworkConversation} from "@/lib/conversations"
 import { createClient } from "@/sanity/lib/supabase/server"
 
 export type CadastroState = {
@@ -74,7 +75,19 @@ export async function cadastrar(
   }
 
   if (data.session) {
-    redirect(await getAuthenticatedDestination(data.user))
+    let destination: string | null = null
+
+    try {
+      destination = await consumePendingArtworkConversation()
+    } catch (pendingConversationError) {
+      console.error(
+        "Não foi possível concluir o interesse pendente.",
+        pendingConversationError,
+      )
+      destination = "/mensagem?erro=envio-falhou"
+    }
+
+    redirect(destination ?? (await getAuthenticatedDestination(data.user)))
   }
 
   return { success: true, email }

@@ -27,3 +27,23 @@ export const ARTWORKS_QUERY = defineQuery(`
     catalogNumber
   }
 `)
+
+export const ARTWORK_INTEREST_QUERY = defineQuery(`
+  *[_type == "artwork" && _id == $id && status == "available"][0] {
+    "id": _id,
+    title,
+    status
+  }
+`)
+
+export const ARTWORKS_BY_IDS_QUERY = defineQuery(`
+  *[_type == "artwork" && _id in $ids] {
+    "id": _id,
+    title,
+    year,
+    technique,
+    dimensions,
+    status,
+    catalogNumber
+  }
+`)

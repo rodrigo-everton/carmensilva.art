@@ -1,9 +1,9 @@
 import Image from "next/image"
-import Link from "next/link"
-import {ArrowUpRight} from "lucide-react"
 
 import { Artwork } from "@/types/artwork"
 import { urlFor } from "@/sanity/lib/image"
+
+import ArtworkInterestButton from "./ArtworkInterestButton"
 
 type ArtworkCardProps = {
   artwork: Artwork
@@ -105,18 +105,10 @@ export default function ArtworkCard({
           )}
 
           {showInquiry && artwork.status === "available" && (
-            <Link
-              href="/contato"
-              className="inline-flex items-center gap-2 font-semibold text-orange transition-colors hover:text-orange-hover"
-              aria-label={`Tenho interesse na obra ${artwork.title}`}
-            >
-              Tenho interesse
-              <ArrowUpRight
-                size={18}
-                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                aria-hidden="true"
-              />
-            </Link>
+            <ArtworkInterestButton
+              artworkId={artwork.id}
+              artworkTitle={artwork.title}
+            />
           )}
         </div>
       </div>

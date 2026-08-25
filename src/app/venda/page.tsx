@@ -1,6 +1,6 @@
 import type {Metadata} from "next"
 import Link from "next/link"
-import {ArrowDownRight, ArrowRight, CircleCheck} from "lucide-react"
+import {AlertCircle, ArrowDownRight, ArrowRight, CircleCheck} from "lucide-react"
 
 import ArtworkGrid from "@/components/artwork/ArtworkGrid"
 import Container from "@/components/ui/Container"
@@ -13,7 +13,15 @@ export const metadata: Metadata = {
     "Conheça as obras de Carmem Silva disponíveis para aquisição e entre em contato para saber mais.",
 }
 
-export default async function VendaPage() {
+type VendaPageProps = {
+  searchParams: Promise<{interesse?: string | string[]}>
+}
+
+export default async function VendaPage({searchParams}: VendaPageProps) {
+  const query = await searchParams
+  const interestStatus = Array.isArray(query.interesse)
+    ? query.interesse[0]
+    : query.interesse
   const {data: saleArtworks} = await sanityFetch({
     query: ARTWORKS_QUERY,
     params: {statuses: ["available", "reserved"]},
@@ -27,6 +35,27 @@ export default async function VendaPage() {
   return (
     <div className="overflow-hidden pb-8 pt-6 sm:pt-10">
       <Container>
+        {interestStatus === "indisponivel" && (
+          <div
+            role="alert"
+            className="mb-6 flex items-start gap-3 rounded-2xl border border-red/15 bg-red-secondary px-5 py-4 text-sm font-medium text-red-hover"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            Esta obra não está mais disponível para uma nova conversa. Confira a
+            seleção atual abaixo.
+          </div>
+        )}
+
+        {interestStatus === "erro" && (
+          <div
+            role="alert"
+            className="mb-6 flex items-start gap-3 rounded-2xl border border-red/15 bg-red-secondary px-5 py-4 text-sm font-medium text-red-hover"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            Não foi possível abrir a conversa agora. Tente novamente em instantes.
+          </div>
+        )}
+
         <header className="relative overflow-hidden rounded-4xl bg-red px-6 py-12 text-white sm:px-10 sm:py-16 lg:px-16 lg:py-20">
           <div
             aria-hidden="true"

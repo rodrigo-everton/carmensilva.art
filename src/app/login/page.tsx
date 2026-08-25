@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { ArrowLeft, Brush, ShieldCheck } from "lucide-react"
+import { ArrowLeft, Brush, MessageSquareText, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
@@ -18,7 +18,11 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{interesse?: string | string[]}>
+}
+
+export default async function LoginPage({searchParams}: LoginPageProps) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -27,6 +31,11 @@ export default async function LoginPage() {
   if (user) {
     redirect(await getAuthenticatedDestination(user))
   }
+
+  const query = await searchParams
+  const hasPendingInterest = Array.isArray(query.interesse)
+    ? query.interesse.includes("1")
+    : query.interesse === "1"
 
   return (
     <div className="overflow-hidden py-8 sm:py-12 lg:py-16">
@@ -86,6 +95,16 @@ export default async function LoginPage() {
               <p className="mt-3 leading-relaxed text-black/60">
                 Use o e-mail e a senha cadastrados para continuar.
               </p>
+
+              {hasPendingInterest && (
+                <div className="mt-5 flex items-start gap-3 rounded-xl bg-orange-secondary/55 px-4 py-3 text-sm text-orange-hover">
+                  <MessageSquareText className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                  <p>
+                    Entre para abrir sua conversa sobre a obra. Seu interesse será
+                    retomado automaticamente.
+                  </p>
+                </div>
+              )}
 
               <LoginForm />
 

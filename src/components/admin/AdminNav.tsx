@@ -3,6 +3,7 @@
 import {
   LayoutDashboard,
   MessageSquareText,
+  Palette,
   ShoppingBag,
   UsersRound,
 } from "lucide-react"
@@ -14,6 +15,11 @@ const adminLinks = [
     href: "/admin",
     label: "Visão geral",
     icon: LayoutDashboard,
+  },
+  {
+    href: "/studio",
+    label: "Obras",
+    icon: Palette,
   },
   {
     href: "/admin/venda",
@@ -45,7 +51,7 @@ export default function AdminNav() {
 
   return (
     <nav aria-label="Navegação administrativa">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex lg:flex-col">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:flex lg:flex-col">
         {adminLinks.map(({ href, label, icon: Icon }) => {
           const isActive = isActivePath(pathname, href)
 
@@ -53,6 +59,7 @@ export default function AdminNav() {
             <Link
               key={href}
               href={href}
+              prefetch={href === "/studio" ? false : undefined}
               aria-current={isActive ? "page" : undefined}
               className={`flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-secondary sm:justify-center lg:justify-start ${
                 isActive

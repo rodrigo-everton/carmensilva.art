@@ -4,6 +4,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   MessageSquareText,
+  Palette,
   ShoppingBag,
   UsersRound,
 } from "lucide-react"
@@ -17,6 +18,14 @@ export const metadata: Metadata = {
 }
 
 const adminAreas = [
+  {
+    href: "/studio",
+    title: "Obras",
+    description: "Cadastre, edite e publique as obras no Sanity Studio.",
+    action: "Abrir obras",
+    icon: Palette,
+    iconClassName: "bg-green-secondary text-green-hover",
+  },
   {
     href: "/admin/venda",
     title: "Vendas",
@@ -51,7 +60,7 @@ export default async function AdminPage() {
       <AdminPageHeader
         eyebrow="Área restrita"
         title="Visão geral"
-        description="Acesse os módulos usados para organizar vendas, mensagens e clientes."
+        description="Acesse os módulos usados para organizar obras, vendas, mensagens e clientes."
         icon={LayoutDashboard}
       />
 
@@ -68,12 +77,13 @@ export default async function AdminPage() {
           <span className="hidden h-px flex-1 bg-red/15 sm:block" aria-hidden="true" />
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {adminAreas.map(
             ({ href, title, description, action, icon: Icon, iconClassName }) => (
               <Link
                 key={href}
                 href={href}
+                prefetch={href === "/studio" ? false : undefined}
                 className="group flex min-h-56 flex-col rounded-2xl border border-red/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-red/20 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange"
               >
                 <span

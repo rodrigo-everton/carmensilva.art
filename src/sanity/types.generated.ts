@@ -197,7 +197,7 @@ export type AllSanitySchemaTypes =
 
 // Source: src/sanity/queries/artwork.ts
 // Variable: ARTWORKS_QUERY
-// Query: *[_type == "artwork"] | order(year desc) {    "id": _id,    title,    "slug": slug.current,    year,    description,    technique,    dimensions,    "image": mainImage {      asset,      crop,      hotspot,      alt    },    images[] {      asset,      crop,      hotspot,      alt    },    status,    featured,    catalogNumber  }
+// Query: *[_type == "artwork" && status in $statuses] | order(year desc) {    "id": _id,    title,    "slug": slug.current,    year,    description,    technique,    dimensions,    "image": mainImage {      asset,      crop,      hotspot,      alt    },    images[] {      asset,      crop,      hotspot,      alt    },    status,    featured,    catalogNumber  }
 export type ARTWORKS_QUERY_RESULT = Array<{
   id: string;
   title: string;
@@ -232,6 +232,6 @@ export type ARTWORKS_QUERY_RESULT = Array<{
 import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
-    '\n  *[_type == "artwork"] | order(year desc) {\n    "id": _id,\n    title,\n    "slug": slug.current,\n    year,\n    description,\n    technique,\n    dimensions,\n    "image": mainImage {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    images[] {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    status,\n    featured,\n    catalogNumber\n  }\n': ARTWORKS_QUERY_RESULT;
+    '\n  *[_type == "artwork" && status in $statuses] | order(year desc) {\n    "id": _id,\n    title,\n    "slug": slug.current,\n    year,\n    description,\n    technique,\n    dimensions,\n    "image": mainImage {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    images[] {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    status,\n    featured,\n    catalogNumber\n  }\n': ARTWORKS_QUERY_RESULT;
   }
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
-import { LogOut, ShieldCheck, UserRound } from "lucide-react"
+import { LogOut, MessageSquareText, ShieldCheck, UserRound } from "lucide-react"
+import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import Container from "@/components/ui/Container"
@@ -72,7 +73,22 @@ export default async function ContaPage() {
               acessado por usuários autenticados.
             </p>
 
-            <form action={logout} className="mt-8">
+            <Link
+              href="/mensagem"
+              className="mt-8 flex items-center gap-4 rounded-2xl border border-red/10 bg-red-secondary/30 p-4 transition-colors hover:bg-red-secondary/55 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange"
+            >
+              <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-red text-white">
+                <MessageSquareText className="size-5" aria-hidden="true" />
+              </span>
+              <span>
+                <span className="block font-semibold text-red">Minhas mensagens</span>
+                <span className="mt-1 block text-sm text-black/60">
+                  Acompanhe suas conversas e respostas.
+                </span>
+              </span>
+            </Link>
+
+            <form action={logout} className="mt-6">
               <button
                 type="submit"
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-red px-5 text-sm font-semibold text-red transition-colors hover:bg-red hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange"

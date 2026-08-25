@@ -14,14 +14,12 @@ export const metadata: Metadata = {
 }
 
 export default async function VendaPage() {
-  const {data: artworks} = await sanityFetch({
+  const {data: saleArtworks} = await sanityFetch({
     query: ARTWORKS_QUERY,
+    params: {statuses: ["available", "reserved"]},
     stega: false,
   })
 
-  const saleArtworks = artworks.filter(
-    ({status}) => status === "available" || status === "reserved",
-  )
   const availableCount = saleArtworks.filter(
     ({status}) => status === "available",
   ).length

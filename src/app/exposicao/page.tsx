@@ -1,6 +1,4 @@
 import type {Metadata} from "next"
-import Link from "next/link"
-import {ChevronRight} from "lucide-react"
 
 import ArtworkGrid from "@/components/artwork/ArtworkGrid"
 import Container from "@/components/ui/Container"
@@ -10,12 +8,13 @@ import {ARTWORKS_QUERY} from "@/sanity/queries/artwork"
 export const metadata: Metadata = {
   title: "Exposição",
   description:
-    "Conheça as obras de Carmem Silva disponíveis, vendidas e integrantes do acervo da artista.",
+    "Conheça as obras vendidas e em exposição de Carmem Silva.",
 }
 
 export default async function Exposicao() {
   const {data: artworks} = await sanityFetch({
     query: ARTWORKS_QUERY,
+    params: {statuses: ["sold", "exhibition"]},
     stega: false,
   })
 
@@ -49,8 +48,8 @@ export default async function Exposicao() {
           <div className="mx-6 md:mr-8 lg:pb-1 bg-red border-red border-2 rounded-2xl p-4 text-white">
             <p className="max-w-xl text-base leading-7 sm:text-lg sm:leading-8">
               Uma seleção de obras que percorre diferentes momentos da
-              produção de Carmem Silva, reunindo trabalhos disponíveis,
-              vendidos e pertencentes ao acervo.
+              produção de Carmem Silva, reunindo trabalhos vendidos e obras
+              atualmente em exposição.
             </p>
             <p className="mt-5 text-sm font-semibold bg-green-secondary border-green-secondary border-2 rounded-2xl p-2 mb-4 text-red-hover">
               {artworks.length} {artworks.length === 1 ? "obra catalogada" : "obras catalogadas"}

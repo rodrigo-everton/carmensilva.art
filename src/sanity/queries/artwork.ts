@@ -1,8 +1,8 @@
-// src/sanity/queries/artworks.ts
+// src/sanity/queries/artwork.ts
 import {defineQuery} from "next-sanity"
 
 export const ARTWORKS_QUERY = defineQuery(`
-  *[_type == "artwork"] | order(year desc) {
+  *[_type == "artwork" && status in $statuses] | order(year desc) {
     "id": _id,
     title,
     "slug": slug.current,

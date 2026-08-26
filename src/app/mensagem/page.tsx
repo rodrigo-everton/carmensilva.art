@@ -12,6 +12,7 @@ import Link from "next/link"
 import {redirect} from "next/navigation"
 
 import MessageComposer from "@/components/message/MessageComposer"
+import PaymentMessageCard from "@/components/payment/PaymentMessageCard"
 import Container from "@/components/ui/Container"
 import {isAdmin} from "@/lib/auth"
 import type {ConversationRow, MessageRow} from "@/lib/conversations"
@@ -34,7 +35,34 @@ type MensagemPageProps = {
   searchParams: Promise<{
     conversa?: string | string[]
     erro?: string | string[]
+    pagamento?: string | string[]
   }>
+}
+
+type PaymentPreferenceRow = {
+  id: string
+  amount_cents: number | string
+  currency: string
+  status: string
+  checkout_url: string | null
+}
+
+type PaymentPreferenceView = {
+  id: string
+  amountCents: number
+  currency: string
+  status: string
+  checkoutUrl: string | null
+}
+
+type MessageWithPaymentPreference = MessageRow & {
+  payment_preference_id: string | null
+  paymentPreference: PaymentPreferenceRow | PaymentPreferenceRow[] | null
+}
+
+type PaymentFeedback = {
+  message: string
+  kind: "notice" | "warning"
 }
 
 function formatDate(value: string) {
@@ -58,6 +86,55 @@ function getErrorMessage(errorCode: string | undefined) {
   }
 }
 
+function getPaymentFeedback(status: string | undefined): PaymentFeedback | null {
+  switch (status) {
+    case "sucesso":
+      return {
+        message:
+          "Recebemos seu retorno do Mercado Pago. A confirmação final aparecerá aqui após a validação do pagamento.",
+        kind: "notice",
+      }
+    case "pendente":
+      return {
+        message:
+          "O pagamento está em análise. Aguarde a confirmação antes de considerar a compra concluída.",
+        kind: "notice",
+      }
+    case "falha":
+      return {
+        message:
+          "O pagamento não foi concluído. Você pode tentar novamente pelo link disponível na conversa.",
+        kind: "warning",
+      }
+    default:
+      return null
+  }
+}
+
+function normalizePaymentPreference(
+  value: PaymentPreferenceRow | PaymentPreferenceRow[] | null | undefined,
+): PaymentPreferenceView | null {
+  const preference = Array.isArray(value) ? value[0] : value
+
+  if (!preference) {
+    return null
+  }
+
+  const amountCents = Number(preference.amount_cents)
+
+  if (!Number.isSafeInteger(amountCents) || amountCents <= 0) {
+    return null
+  }
+
+  return {
+    id: preference.id,
+    amountCents,
+    currency: preference.currency,
+    status: preference.status,
+    checkoutUrl: preference.checkout_url,
+  }
+}
+
 export default async function MensagemPage({searchParams}: MensagemPageProps) {
   const supabase = await createClient()
   const {
@@ -78,6 +155,10 @@ export default async function MensagemPage({searchParams}: MensagemPageProps) {
     : query.conversa
   const errorCode = Array.isArray(query.erro) ? query.erro[0] : query.erro
   const feedbackMessage = getErrorMessage(errorCode)
+  const paymentStatus = Array.isArray(query.pagamento)
+    ? query.pagamento[0]
+    : query.pagamento
+  const paymentFeedback = getPaymentFeedback(paymentStatus)
 
   const {data: conversationData, error: conversationsError} = await supabase
     .from("conversations")
@@ -103,17 +184,32 @@ export default async function MensagemPage({searchParams}: MensagemPageProps) {
     artworksResult.data.map((artwork) => [artwork.id, artwork]),
   )
 
-  let messages: MessageRow[] = []
+  let messages: MessageWithPaymentPreference[] = []
   let messagesFailed = false
 
   if (activeConversation) {
     const {data, error} = await supabase
       .from("messages")
-      .select("id,conversation_id,sender_id,content,created_at,read_at")
+      .select(`
+        id,
+        conversation_id,
+        sender_id,
+        content,
+        created_at,
+        read_at,
+        payment_preference_id,
+        paymentPreference:payment_preferences!messages_payment_preference_id_fkey(
+          id,
+          amount_cents,
+          currency,
+          status,
+          checkout_url
+        )
+      `)
       .eq("conversation_id", activeConversation.id)
       .order("created_at", {ascending: true})
 
-    messages = (data ?? []) as MessageRow[]
+    messages = (data ?? []) as MessageWithPaymentPreference[]
     messagesFailed = Boolean(error)
   }
 
@@ -178,6 +274,24 @@ export default async function MensagemPage({searchParams}: MensagemPageProps) {
             >
               <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               {feedbackMessage}
+            </div>
+          )}
+
+          {paymentFeedback && (
+            <div
+              role={paymentFeedback.kind === "warning" ? "alert" : "status"}
+              className={`flex items-start gap-3 border-b px-6 py-4 text-sm font-medium ${
+                paymentFeedback.kind === "warning"
+                  ? "border-red/15 bg-red-secondary/45 text-red-hover"
+                  : "border-green/15 bg-green-secondary/65 text-green-hover"
+              }`}
+            >
+              {paymentFeedback.kind === "warning" ? (
+                <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              ) : (
+                <Clock3 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              )}
+              {paymentFeedback.message}
             </div>
           )}
 
@@ -306,7 +420,21 @@ export default async function MensagemPage({searchParams}: MensagemPageProps) {
                     </div>
                   ) : (
                     messages.map((message) => {
+                      const paymentPreference = normalizePaymentPreference(
+                        message.paymentPreference,
+                      )
                       const isCustomer = message.sender_id === user.id
+
+                      if (paymentPreference) {
+                        return (
+                          <PaymentMessageCard
+                            key={message.id}
+                            variant="customer"
+                            preference={paymentPreference}
+                            timestamp={formatDate(message.created_at)}
+                          />
+                        )
+                      }
 
                       return (
                         <article

@@ -34,3 +34,25 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Pagamentos negociados com Mercado Pago
+
+O fluxo de Checkout Pro é iniciado por uma pessoa administradora dentro de cada
+conversa. O valor é definido em reais, o link é enviado como uma mensagem de
+pagamento estruturada e somente o webhook assinado pode confirmar a venda.
+
+Antes do deploy:
+
+1. Aplique, no Supabase, as migrations versionadas em `supabase/migrations/`.
+2. Copie as variáveis de `.env.example` para `.env.local` e para o ambiente da
+   Vercel. `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` e
+   `SUPABASE_SECRET_KEY` são credenciais exclusivas do servidor.
+3. Em **Suas integrações > Webhooks** no Mercado Pago, configure o evento
+   **Pagamentos** apontando para
+   `https://SEU-DOMINIO/api/webhooks/mercadopago?source_news=webhooks`.
+4. Use o botão **Simular** do painel do Mercado Pago para validar o receptor. O
+   retorno do navegador serve apenas como feedback; a confirmação financeira é
+   feita pela consulta server-side executada após o webhook.
+
+A integração usa diretamente o `init_point` devolvido pela preferência; não é
+necessária uma Public Key do Mercado Pago no navegador.

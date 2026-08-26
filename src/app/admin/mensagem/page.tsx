@@ -10,6 +10,8 @@ import Link from "next/link"
 
 import {AdminPageHeader} from "@/components/admin/AdminPage"
 import MessageComposer from "@/components/message/MessageComposer"
+import GeneratePaymentButton from "@/components/payment/GeneratePaymentButton"
+import PaymentMessageCard from "@/components/payment/PaymentMessageCard"
 import {requireAdmin} from "@/lib/auth"
 import type {ConversationRow, MessageRow} from "@/lib/conversations"
 import {sanityFetch} from "@/sanity/lib/live"
@@ -34,6 +36,27 @@ type CustomerProfile = {
   full_name: string | null
 }
 
+type PaymentPreferenceRow = {
+  id: string
+  amount_cents: number | string
+  currency: string
+  status: string
+  checkout_url: string | null
+}
+
+type PaymentPreferenceView = {
+  id: string
+  amountCents: number
+  currency: string
+  status: string
+  checkoutUrl: string | null
+}
+
+type MessageWithPaymentPreference = MessageRow & {
+  payment_preference_id: string | null
+  paymentPreference: PaymentPreferenceRow | PaymentPreferenceRow[] | null
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
@@ -52,6 +75,30 @@ function getErrorMessage(errorCode: string | undefined) {
       return "Essa conversa não está disponível."
     default:
       return null
+  }
+}
+
+function normalizePaymentPreference(
+  value: PaymentPreferenceRow | PaymentPreferenceRow[] | null | undefined,
+): PaymentPreferenceView | null {
+  const preference = Array.isArray(value) ? value[0] : value
+
+  if (!preference) {
+    return null
+  }
+
+  const amountCents = Number(preference.amount_cents)
+
+  if (!Number.isSafeInteger(amountCents) || amountCents <= 0) {
+    return null
+  }
+
+  return {
+    id: preference.id,
+    amountCents,
+    currency: preference.currency,
+    status: preference.status,
+    checkoutUrl: preference.checkout_url,
   }
 }
 
@@ -104,18 +151,49 @@ export default async function AdminMensagemPage({
     artworksResult.data.map((artwork) => [artwork.id, artwork]),
   )
 
-  let messages: MessageRow[] = []
+  let messages: MessageWithPaymentPreference[] = []
   let messagesFailed = false
+  let activePaymentPreference: PaymentPreferenceView | null = null
+  let paymentPreferenceLookupFailed = false
 
   if (activeConversation) {
-    const {data, error} = await supabase
-      .from("messages")
-      .select("id,conversation_id,sender_id,content,created_at,read_at")
-      .eq("conversation_id", activeConversation.id)
-      .order("created_at", {ascending: true})
+    const [messagesResult, paymentPreferenceResult] = await Promise.all([
+      supabase
+        .from("messages")
+        .select(`
+          id,
+          conversation_id,
+          sender_id,
+          content,
+          created_at,
+          read_at,
+          payment_preference_id,
+          paymentPreference:payment_preferences!messages_payment_preference_id_fkey(
+            id,
+            amount_cents,
+            currency,
+            status,
+            checkout_url
+          )
+        `)
+        .eq("conversation_id", activeConversation.id)
+        .order("created_at", {ascending: true}),
+      supabase
+        .from("payment_preferences")
+        .select("id,amount_cents,currency,status,checkout_url")
+        .eq("conversation_id", activeConversation.id)
+        .in("status", ["creating", "active"])
+        .order("created_at", {ascending: false})
+        .limit(1)
+        .maybeSingle(),
+    ])
 
-    messages = (data ?? []) as MessageRow[]
-    messagesFailed = Boolean(error)
+    messages = (messagesResult.data ?? []) as MessageWithPaymentPreference[]
+    messagesFailed = Boolean(messagesResult.error)
+    activePaymentPreference = normalizePaymentPreference(
+      paymentPreferenceResult.data as PaymentPreferenceRow | null,
+    )
+    paymentPreferenceLookupFailed = Boolean(paymentPreferenceResult.error)
   }
 
   const activeArtwork = activeConversation
@@ -224,10 +302,17 @@ export default async function AdminMensagemPage({
                     {activeCustomer?.full_name ?? "Cliente"}
                   </h3>
                 </div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-green-secondary px-3 py-1.5 text-xs font-semibold text-green-hover">
-                  <UserRound className="size-3.5" aria-hidden="true" />
-                  {activeConversation.status === "open" ? "Conversa aberta" : "Conversa encerrada"}
-                </span>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <GeneratePaymentButton
+                    conversationId={activeConversation.id}
+                    existingPreference={activePaymentPreference}
+                    lookupFailed={paymentPreferenceLookupFailed}
+                  />
+                  <span className="inline-flex items-center gap-2 rounded-full bg-green-secondary px-3 py-1.5 text-xs font-semibold text-green-hover">
+                    <UserRound className="size-3.5" aria-hidden="true" />
+                    {activeConversation.status === "open" ? "Conversa aberta" : "Conversa encerrada"}
+                  </span>
+                </div>
               </div>
             </header>
 
@@ -246,8 +331,22 @@ export default async function AdminMensagemPage({
                 </div>
               ) : (
                 messages.map((message) => {
+                  const paymentPreference = normalizePaymentPreference(
+                    message.paymentPreference,
+                  )
                   const isArtist =
                     message.sender_id !== activeConversation.customer_id
+
+                  if (paymentPreference) {
+                    return (
+                      <PaymentMessageCard
+                        key={message.id}
+                        variant="admin"
+                        preference={paymentPreference}
+                        timestamp={formatDate(message.created_at)}
+                      />
+                    )
+                  }
 
                   return (
                     <article

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { SanityLive } from "@/sanity/lib/live";
 
 const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 const siteUrl = configuredSiteUrl
@@ -97,6 +98,7 @@ export default function RootLayout({
         <main>{children}</main>
 
         <Footer />
+        <SanityLive />
       </body>
     </html>
   )

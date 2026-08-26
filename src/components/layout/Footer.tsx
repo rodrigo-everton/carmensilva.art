@@ -3,8 +3,9 @@ import { navItems } from "./navItems"
 import { Link } from "lucide-react"
 import { Button } from "../ui/Button"
 import Image from "next/image";
+import socialLinks from "@/app/socialLinks.json";
 
-//TODO: adicionar link para whatsapp
+const linkWhatsapp = "https://api.whatsapp.com/send/?phone=" + socialLinks.whatsapp + "&text=Ol%C3%A1+Carmem+Silva%2C+venho+do+seu+website+de+galeria+de+arte+e+gostaria+de+conversar.&type=phone_number&app_absent=0";
 export default function Footer() {
   return (
     <footer className="mt-20 border-t border-white bg-red text-white">
@@ -26,7 +27,7 @@ export default function Footer() {
             <Button 
               variant="orange" 
               className="my-4"
-              href="/"
+              href={linkWhatsapp}
             >
               <Image 
                 src="/whatsapp-logo-branco.svg"

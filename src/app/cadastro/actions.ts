@@ -42,7 +42,7 @@ export async function cadastrar(
 
   const requestOrigin = (await headers()).get("origin")
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.trim()
-  const rawOrigin = requestOrigin ?? configuredOrigin
+  const rawOrigin = configuredOrigin || requestOrigin
   const origin = rawOrigin
     ? rawOrigin.includes("://")
       ? rawOrigin

@@ -19,7 +19,7 @@ export default function Hero() {
 
           <h1 className="max-w-3xl text-5xl font-semibold leading-[0.95] tracking-tight sm:text-6xl lg:text-8xl">
             Arte que nasce da
-            <span className="block text-red-hover">cor e da memória.</span>
+            <span className="block text-white-hover">cor e da memória.</span>
           </h1>
 
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-orange-secondary md:text-xl">
@@ -28,7 +28,7 @@ export default function Hero() {
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Button variant="red" size="lg" href="/venda">
+            <Button variant="white" size="lg" href="/venda">
               Conhecer obras
             </Button>
             <Button variant="ghostwhite" size="lg" href="/sobre">
@@ -41,13 +41,13 @@ export default function Hero() {
           <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full border border-orange-secondary/50" />
           <div className="absolute -bottom-7 -left-7 z-20 h-28 w-28 bg-orange" />
 
-          <div className="relative aspect-4/5 overflow-hidden rounded-t-full border-10 border-red-secondary bg-red shadow-2xl shadow-black/20">
+          {/* <div className="relative aspect-4/5 overflow-hidden rounded-t-full border-10 border-red-secondary bg-red shadow-2xl shadow-black/20">
             <div className="absolute inset-x-0 bottom-0 h-[46%] bg-orange-secondary" />
             <div className="absolute -left[-18%] top-[18%] size-[70%] rounded-full bg-orange" />
             <div className="absolute -right[-15%] top-[8%] h-[72%] w-[58%] rotate-12 rounded-full bg-green-secondary" />
             <div className="absolute bottom[-12%] left-[14%] h-[42%] w-[30%] -rotate-12 bg-red-hover" />
             <div className="absolute bottom[-8%] right-[8%] size-[34%] rounded-full border-12 border-white/80" />
-          </div>
+          </div> */}
 
           <p className="mt-5 text-right text-xs font-semibold uppercase tracking-[0.25em] text-orange-secondary">
             Cor · Forma · Expressão

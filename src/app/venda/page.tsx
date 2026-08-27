@@ -96,7 +96,7 @@ export default async function VendaPage({searchParams}: VendaPageProps) {
           </div>
         </header>
 
-        <section aria-labelledby="obras-venda-heading" className="py-16 sm:py-20 lg:py-24">
+        <section aria-labelledby="obras-venda-heading" className="bg-white py-16 sm:py-20 lg:py-24">
           <div className="mb-10 grid gap-8 lg:grid-cols-[0.65fr_1.35fr] lg:gap-16">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-red/70">

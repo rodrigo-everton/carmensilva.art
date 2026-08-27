@@ -2,7 +2,11 @@
 import {defineQuery} from "next-sanity"
 
 export const ARTWORKS_QUERY = defineQuery(`
-  *[_type == "artwork" && status in $statuses]
+  *[
+    _type == "artwork" &&
+    status in $statuses &&
+    defined(mainImage.asset._ref)
+  ]
     | order(year desc, _updatedAt desc, _id asc) {
     "id": _id,
     title,

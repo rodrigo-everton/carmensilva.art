@@ -42,6 +42,8 @@ export default function ArtworkCard({
   artwork,
   showInquiry = false,
 }: ArtworkCardProps) {
+  if (!artwork.image?.asset) return null
+
   const status = statusStyles[artwork.status]
   const dimensions = formatDimensions(artwork.dimensions)
 

@@ -40,7 +40,7 @@ export type Artwork = {
     unit?: "cm";
   };
   mainImage: {
-    asset?: SanityImageAssetReference;
+    asset: SanityImageAssetReference;
     media?: unknown;
     hotspot?: SanityImageHotspot;
     crop?: SanityImageCrop;
@@ -197,7 +197,7 @@ export type AllSanitySchemaTypes =
 
 // Source: src/sanity/queries/artwork.ts
 // Variable: ARTWORKS_QUERY
-// Query: *[_type == "artwork" && status in $statuses]    | order(year desc, _updatedAt desc, _id asc) {    "id": _id,    title,    "slug": slug.current,    year,    description,    technique,    dimensions,    "image": mainImage {      asset,      crop,      hotspot,      alt    },    images[] {      asset,      crop,      hotspot,      alt    },    status,    featured,    catalogNumber  }
+// Query: *[    _type == "artwork" &&    status in $statuses &&    defined(mainImage.asset._ref)  ]    | order(year desc, _updatedAt desc, _id asc) {    "id": _id,    title,    "slug": slug.current,    year,    description,    technique,    dimensions,    "image": mainImage {      asset,      crop,      hotspot,      alt    },    images[] {      asset,      crop,      hotspot,      alt    },    status,    featured,    catalogNumber  }
 export type ARTWORKS_QUERY_RESULT = Array<{
   id: string;
   title: string;
@@ -212,7 +212,7 @@ export type ARTWORKS_QUERY_RESULT = Array<{
     unit?: "cm";
   } | null;
   image: {
-    asset: SanityImageAssetReference | null;
+    asset: SanityImageAssetReference;
     crop: SanityImageCrop | null;
     hotspot: SanityImageHotspot | null;
     alt: string | null;
@@ -259,7 +259,7 @@ export type ARTWORKS_BY_IDS_QUERY_RESULT = Array<{
 import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
-    '\n  *[_type == "artwork" && status in $statuses]\n    | order(year desc, _updatedAt desc, _id asc) {\n    "id": _id,\n    title,\n    "slug": slug.current,\n    year,\n    description,\n    technique,\n    dimensions,\n    "image": mainImage {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    images[] {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    status,\n    featured,\n    catalogNumber\n  }\n': ARTWORKS_QUERY_RESULT;
+    '\n  *[\n    _type == "artwork" &&\n    status in $statuses &&\n    defined(mainImage.asset._ref)\n  ]\n    | order(year desc, _updatedAt desc, _id asc) {\n    "id": _id,\n    title,\n    "slug": slug.current,\n    year,\n    description,\n    technique,\n    dimensions,\n    "image": mainImage {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    images[] {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    status,\n    featured,\n    catalogNumber\n  }\n': ARTWORKS_QUERY_RESULT;
     '\n  *[_type == "artwork" && _id == $id && status == "available"][0] {\n    "id": _id,\n    title,\n    status\n  }\n': ARTWORK_INTEREST_QUERY_RESULT;
     '\n  *[_type == "artwork" && _id in $ids] {\n    "id": _id,\n    title,\n    year,\n    technique,\n    dimensions,\n    status,\n    catalogNumber\n  }\n': ARTWORKS_BY_IDS_QUERY_RESULT;
   }

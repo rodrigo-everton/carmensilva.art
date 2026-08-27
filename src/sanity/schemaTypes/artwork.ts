@@ -101,7 +101,7 @@ export const artworkType = defineType({
         }),
       ],
 
-      validation: (rule) => rule.required(),
+      validation: (rule) => rule.required().assetRequired(),
     }),
 
     defineField({

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "email:configure": "node --env-file=.env.local scripts/configure-supabase-email.mjs",
     "schema:extract": "sanity schema extract --enforce-required-fields",
     "typegen": "npm run schema:extract && sanity typegen generate"
   },
@@ -21,6 +22,7 @@
     "next-sanity": "^13.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "resend": "^6.24.0",
     "sanity": "^5.31.2",
     "styled-components": "^6.5.3"
   },

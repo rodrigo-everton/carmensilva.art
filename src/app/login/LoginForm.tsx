@@ -1,6 +1,7 @@
 "use client"
 
 import { Eye, EyeOff, LoaderCircle, LockKeyhole, Mail } from "lucide-react"
+import Link from "next/link"
 import { useActionState, useState } from "react"
 
 import { login } from "./actions"
@@ -34,9 +35,17 @@ export default function LoginForm() {
       </div>
 
       <div>
-        <label htmlFor="password" className="mb-2 block text-sm font-semibold text-red">
-          Senha
-        </label>
+        <div className="mb-2 flex items-center justify-between gap-4">
+          <label htmlFor="password" className="block text-sm font-semibold text-red">
+            Senha
+          </label>
+          <Link
+            href="/recuperar-senha"
+            className="text-sm font-semibold text-red/65 transition-colors hover:text-red"
+          >
+            Esqueci minha senha
+          </Link>
+        </div>
         <div className="relative">
           <LockKeyhole
             aria-hidden="true"

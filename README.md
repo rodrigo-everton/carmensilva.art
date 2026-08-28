@@ -56,3 +56,8 @@ Antes do deploy:
 
 A integração usa diretamente o `init_point` devolvido pela preferência; não é
 necessária uma Public Key do Mercado Pago no navegador.
+
+## E-mails transacionais
+
+Consulte [docs/resend-supabase.md](docs/resend-supabase.md) para configurar o
+Resend, o SMTP do Supabase Auth, os templates e a validação operacional.

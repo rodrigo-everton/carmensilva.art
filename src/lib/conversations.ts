@@ -1,12 +1,14 @@
 import "server-only"
 
 import {cookies} from "next/headers"
+import {after} from "next/server"
 
 import {client as sanityClient} from "@/sanity/lib/client"
 import {createClient} from "@/sanity/lib/supabase/server"
 import {ARTWORK_INTEREST_QUERY} from "@/sanity/queries/artwork"
 
 import {isAdmin} from "./auth"
+import {notifyAdminsOfNewConversation} from "./conversation-email"
 
 export const pendingArtworkCookie = "carmem-pending-artwork"
 
@@ -121,6 +123,26 @@ export async function openArtworkConversation(
     // The conversation remains available so the customer can still write from
     // the message screen if the automatic opening message cannot be stored.
     console.error("Não foi possível registrar a mensagem inicial.", messageError.message)
+  }
+
+  try {
+    after(() =>
+      notifyAdminsOfNewConversation({
+        conversationId: conversation.id,
+        artworkId: artwork.id,
+        artworkTitle: artwork.title,
+        customerEmail: user.email ?? null,
+        customerName:
+          typeof user.user_metadata.nome === "string"
+            ? user.user_metadata.nome
+            : null,
+      }),
+    )
+  } catch (notificationError) {
+    console.error(
+      "Não foi possível agendar a notificação de nova conversa.",
+      notificationError,
+    )
   }
 
   return {status: "ready", conversationId: conversation.id}

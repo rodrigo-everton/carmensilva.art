@@ -12,6 +12,7 @@ import {structureTool} from 'sanity/structure'
 import {apiVersion, dataset, projectId} from './src/sanity/env'
 import {schemaTypes} from './src/sanity/schemaTypes'
 import {structure} from './src/sanity/structure'
+import { ptBRLocale } from '@sanity/locale-pt-br'
 
 export default defineConfig({
   basePath: '/studio',

@@ -109,6 +109,15 @@ export function getPublicSiteUrl() {
   return siteUrl
 }
 
+export function getMercadoPagoCheckoutConfiguration() {
+  const siteUrl = getPublicSiteUrl()
+
+  getClients()
+  getMercadoPagoWebhookSecret()
+
+  return {siteUrl}
+}
+
 export async function createMercadoPagoPreference({
   paymentPreferenceId,
   conversationId,

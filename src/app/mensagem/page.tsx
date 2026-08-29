@@ -15,7 +15,11 @@ import MessageComposer from "@/components/message/MessageComposer"
 import PaymentMessageCard from "@/components/payment/PaymentMessageCard"
 import Container from "@/components/ui/Container"
 import {isAdmin} from "@/lib/auth"
-import type {ConversationRow, MessageRow} from "@/lib/conversations"
+import {
+  loadConversationMessages,
+  type ConversationMessageRow,
+  type ConversationRow,
+} from "@/lib/conversations"
 import {sanityFetch} from "@/sanity/lib/live"
 import {createClient} from "@/sanity/lib/supabase/server"
 import {ARTWORKS_BY_IDS_QUERY} from "@/sanity/queries/artwork"
@@ -53,11 +57,6 @@ type PaymentPreferenceView = {
   currency: string
   status: string
   checkoutUrl: string | null
-}
-
-type MessageWithPaymentPreference = MessageRow & {
-  payment_preference_id: string | null
-  paymentPreference: PaymentPreferenceRow | PaymentPreferenceRow[] | null
 }
 
 type PaymentFeedback = {
@@ -184,33 +183,14 @@ export default async function MensagemPage({searchParams}: MensagemPageProps) {
     artworksResult.data.map((artwork) => [artwork.id, artwork]),
   )
 
-  let messages: MessageWithPaymentPreference[] = []
+  let messages: ConversationMessageRow[] = []
   let messagesFailed = false
 
   if (activeConversation) {
-    const {data, error} = await supabase
-      .from("messages")
-      .select(`
-        id,
-        conversation_id,
-        sender_id,
-        content,
-        created_at,
-        read_at,
-        payment_preference_id,
-        paymentPreference:payment_preferences!messages_payment_preference_id_fkey(
-          id,
-          amount_cents,
-          currency,
-          status,
-          checkout_url
-        )
-      `)
-      .eq("conversation_id", activeConversation.id)
-      .order("created_at", {ascending: true})
+    const messagesResult = await loadConversationMessages(activeConversation.id)
 
-    messages = (data ?? []) as MessageWithPaymentPreference[]
-    messagesFailed = Boolean(error)
+    messages = messagesResult.data
+    messagesFailed = Boolean(messagesResult.error)
   }
 
   const nome =

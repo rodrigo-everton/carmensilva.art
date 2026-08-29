@@ -30,11 +30,87 @@ export type MessageRow = {
   read_at: string | null
 }
 
+export type MessagePaymentPreferenceRow = {
+  id: string
+  amount_cents: number | string
+  currency: string
+  status: string
+  checkout_url: string | null
+}
+
+export type ConversationMessageRow = MessageRow & {
+  payment_preference_id: string | null
+  paymentPreference:
+    | MessagePaymentPreferenceRow
+    | MessagePaymentPreferenceRow[]
+    | null
+}
+
 export type OpenArtworkConversationResult =
   | {status: "ready"; conversationId: string}
   | {status: "unauthenticated"}
   | {status: "admin"}
   | {status: "unavailable"}
+
+export async function loadConversationMessages(conversationId: string) {
+  const supabase = await createClient()
+  const enrichedResult = await supabase
+    .from("messages")
+    .select(`
+      id,
+      conversation_id,
+      sender_id,
+      content,
+      created_at,
+      read_at,
+      payment_preference_id,
+      paymentPreference:payment_preferences!messages_payment_preference_id_fkey(
+        id,
+        amount_cents,
+        currency,
+        status,
+        checkout_url
+      )
+    `)
+    .eq("conversation_id", conversationId)
+    .order("created_at", {ascending: true})
+
+  if (!enrichedResult.error) {
+    return {
+      data: (enrichedResult.data ?? []) as ConversationMessageRow[],
+      error: null,
+    }
+  }
+
+  // Payment support is additive. Keep the core conversation readable while a
+  // deployment is waiting for the payment migration or PostgREST schema cache.
+  const basicResult = await supabase
+    .from("messages")
+    .select("id,conversation_id,sender_id,content,created_at,read_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", {ascending: true})
+
+  if (basicResult.error) {
+    return {
+      data: [] as ConversationMessageRow[],
+      error: basicResult.error,
+    }
+  }
+
+  console.warn(
+    "Metadados de pagamento indisponíveis; carregando somente as mensagens.",
+    enrichedResult.error.message,
+  )
+
+  return {
+    data: ((basicResult.data ?? []) as MessageRow[]).map((message) => ({
+      ...message,
+      payment_preference_id: null,
+      paymentPreference: null,
+    })),
+    error: null,
+  }
+}
 
 export async function openArtworkConversation(
   artworkId: string,

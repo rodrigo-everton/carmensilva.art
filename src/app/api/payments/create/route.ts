@@ -6,7 +6,7 @@ import {NextResponse} from "next/server"
 import {isAdmin} from "@/lib/auth"
 import {
   createMercadoPagoPreference,
-  getPublicSiteUrl,
+  getMercadoPagoCheckoutConfiguration,
   isDefinitiveMercadoPagoError,
   MercadoPagoConfigurationError,
 } from "@/lib/mercadopago"
@@ -160,6 +160,15 @@ export async function POST(request: Request) {
       "Informe um valor em reais maior que zero, com no máximo duas casas decimais.",
       400,
     )
+  }
+
+  let siteUrl: URL
+
+  try {
+    siteUrl = getMercadoPagoCheckoutConfiguration().siteUrl
+  } catch (error) {
+    console.error("Configuração do Mercado Pago indisponível.", error)
+    return errorResponse("O Mercado Pago ainda não está configurado.", 503)
   }
 
   let supabase: SupabaseClient
@@ -409,7 +418,7 @@ export async function POST(request: Request) {
       adminUserId: paymentPreference.created_by,
       amount: paymentPreference.amount_cents / 100,
       payerEmail: customer?.email,
-      siteUrl: getPublicSiteUrl(),
+      siteUrl,
     })
   } catch (error) {
     console.error("Não foi possível criar a preferência no Mercado Pago.", error)

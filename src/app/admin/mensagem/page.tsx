@@ -13,7 +13,11 @@ import MessageComposer from "@/components/message/MessageComposer"
 import GeneratePaymentButton from "@/components/payment/GeneratePaymentButton"
 import PaymentMessageCard from "@/components/payment/PaymentMessageCard"
 import {requireAdmin} from "@/lib/auth"
-import type {ConversationRow, MessageRow} from "@/lib/conversations"
+import {
+  loadConversationMessages,
+  type ConversationMessageRow,
+  type ConversationRow,
+} from "@/lib/conversations"
 import {sanityFetch} from "@/sanity/lib/live"
 import {createClient} from "@/sanity/lib/supabase/server"
 import {ARTWORKS_BY_IDS_QUERY} from "@/sanity/queries/artwork"
@@ -50,11 +54,6 @@ type PaymentPreferenceView = {
   currency: string
   status: string
   checkoutUrl: string | null
-}
-
-type MessageWithPaymentPreference = MessageRow & {
-  payment_preference_id: string | null
-  paymentPreference: PaymentPreferenceRow | PaymentPreferenceRow[] | null
 }
 
 function formatDate(value: string) {
@@ -151,33 +150,14 @@ export default async function AdminMensagemPage({
     artworksResult.data.map((artwork) => [artwork.id, artwork]),
   )
 
-  let messages: MessageWithPaymentPreference[] = []
+  let messages: ConversationMessageRow[] = []
   let messagesFailed = false
   let activePaymentPreference: PaymentPreferenceView | null = null
   let paymentPreferenceLookupFailed = false
 
   if (activeConversation) {
     const [messagesResult, paymentPreferenceResult] = await Promise.all([
-      supabase
-        .from("messages")
-        .select(`
-          id,
-          conversation_id,
-          sender_id,
-          content,
-          created_at,
-          read_at,
-          payment_preference_id,
-          paymentPreference:payment_preferences!messages_payment_preference_id_fkey(
-            id,
-            amount_cents,
-            currency,
-            status,
-            checkout_url
-          )
-        `)
-        .eq("conversation_id", activeConversation.id)
-        .order("created_at", {ascending: true}),
+      loadConversationMessages(activeConversation.id),
       supabase
         .from("payment_preferences")
         .select("id,amount_cents,currency,status,checkout_url")
@@ -188,7 +168,7 @@ export default async function AdminMensagemPage({
         .maybeSingle(),
     ])
 
-    messages = (messagesResult.data ?? []) as MessageWithPaymentPreference[]
+    messages = messagesResult.data
     messagesFailed = Boolean(messagesResult.error)
     activePaymentPreference = normalizePaymentPreference(
       paymentPreferenceResult.data as PaymentPreferenceRow | null,

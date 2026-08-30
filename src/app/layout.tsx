@@ -2,14 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { getSiteUrl } from "@/lib/site-url";
 import { SanityLive } from "@/sanity/lib/live";
 
-const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-const siteUrl = configuredSiteUrl
-  ? configuredSiteUrl.includes("://")
-    ? configuredSiteUrl
-    : `https://${configuredSiteUrl}`
-  : "http://localhost:3000";
+const siteUrl = getSiteUrl();
 
 const TITLE = "Carmem Silva - Arte";
 const NAME = "Carmem Silva Cruz";
@@ -41,10 +37,6 @@ export const metadata: Metadata = {
     email: true,
     address: true,
     telephone: true,
-  },
-
-  alternates: {
-    canonical: "/",
   },
 
   //TODO: faltam icone opengraph e descricao da imagem

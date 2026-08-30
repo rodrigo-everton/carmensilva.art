@@ -1,6 +1,12 @@
 import Image from "next/image"
+import Link from "next/link"
+import {ArrowUpRight} from "lucide-react"
 
 import { Artwork } from "@/types/artwork"
+import {
+  artworkStatusDetails,
+  formatArtworkDimensions,
+} from "@/lib/artwork-display"
 import { urlFor } from "@/sanity/lib/image"
 
 import ArtworkInterestButton from "./ArtworkInterestButton"
@@ -10,46 +16,24 @@ type ArtworkCardProps = {
   showInquiry?: boolean
 }
 
-const statusStyles = {
-  available: {
-    label: "Disponível",
-    className: "bg-green-secondary text-green-hover",
-  },
-  reserved: {
-    label: "Reservada",
-    className: "bg-orange-secondary text-orange-hover",
-  },
-  exhibition: {
-    label: "Em exposição",
-    className: "bg-red-secondary text-red-hover",
-  },
-  sold: {
-    label: "Vendida",
-    className: "bg-red text-white",
-  },
-} satisfies Record<Artwork["status"], {label: string; className: string}>
-
-function formatDimensions(dimensions: Artwork["dimensions"]) {
-  if (!dimensions?.width || !dimensions.height) return null
-
-  const values = [dimensions.height, dimensions.width]
-  if (dimensions.depth) values.push(dimensions.depth)
-
-  return `${values.join(" × ")} ${dimensions.unit ?? "cm"}`
-}
-
 export default function ArtworkCard({
   artwork,
   showInquiry = false,
 }: ArtworkCardProps) {
   if (!artwork.image?.asset) return null
 
-  const status = statusStyles[artwork.status]
-  const dimensions = formatDimensions(artwork.dimensions)
+  const status = artworkStatusDetails[artwork.status]
+  const dimensions = formatArtworkDimensions(artwork.dimensions)
+  const artworkHref = `/obra/${artwork.slug}`
 
   return (
     <article className="group overflow-hidden rounded-4xl border border-red/15 bg-white transition-transform duration-300 hover:-translate-y-1">
-      <div className="relative aspect-4/5 overflow-hidden bg-green-secondary">
+      <Link
+        href={artworkHref}
+        prefetch={false}
+        aria-label={`Ver detalhes da obra ${artwork.title}`}
+        className="relative block aspect-4/5 overflow-hidden bg-green-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange"
+      >
         <Image
           src={urlFor(artwork.image).width(900).height(1125).fit("crop").url()}
           alt={artwork.image.alt ?? artwork.title}
@@ -60,12 +44,18 @@ export default function ArtworkCard({
         <span className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-xs font-semibold ${status.className}`}>
           {status.label}
         </span>
-      </div>
+      </Link>
 
       <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-2xl font-semibold leading-snug tracking-tight text-red">
-            {artwork.title}
+            <Link
+              href={artworkHref}
+              prefetch={false}
+              className="rounded-sm transition-colors hover:text-orange focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange"
+            >
+              {artwork.title}
+            </Link>
           </h3>
           {artwork.year && (
             <span className="shrink-0 pt-1 text-sm font-semibold text-green">
@@ -97,7 +87,7 @@ export default function ArtworkCard({
           </dl>
         )}
 
-        <div className="mt-6 flex items-end justify-between gap-4">
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
           {artwork.catalogNumber ? (
             <p className="text-xs uppercase tracking-[0.16em] text-red/45">
               Cat. {artwork.catalogNumber}
@@ -106,12 +96,23 @@ export default function ArtworkCard({
             <span />
           )}
 
-          {showInquiry && artwork.status === "available" && (
-            <ArtworkInterestButton
-              artworkId={artwork.id}
-              artworkTitle={artwork.title}
-            />
-          )}
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-4">
+            <Link
+              href={artworkHref}
+              prefetch={false}
+              className="inline-flex items-center gap-1.5 rounded-sm text-sm font-semibold text-red transition-colors hover:text-orange focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange"
+            >
+              Ver obra
+              <ArrowUpRight className="size-4" aria-hidden="true" />
+            </Link>
+
+            {showInquiry && artwork.status === "available" && (
+              <ArtworkInterestButton
+                artworkId={artwork.id}
+                artworkTitle={artwork.title}
+              />
+            )}
+          </div>
         </div>
       </div>
     </article>

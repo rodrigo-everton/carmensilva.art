@@ -5,6 +5,7 @@ export const ARTWORKS_QUERY = defineQuery(`
   *[
     _type == "artwork" &&
     status in $statuses &&
+    defined(slug.current) &&
     defined(mainImage.asset._ref)
   ]
     | order(year desc, _updatedAt desc, _id asc) {
@@ -21,7 +22,34 @@ export const ARTWORKS_QUERY = defineQuery(`
       hotspot,
       alt
     },
-    images[] {
+    status,
+    featured,
+    catalogNumber
+  }
+`)
+
+export const ARTWORK_QUERY = defineQuery(`
+  *[
+    _type == "artwork" &&
+    slug.current == $slug &&
+    defined(mainImage.asset._ref)
+  ][0] {
+    "id": _id,
+    _updatedAt,
+    title,
+    "slug": slug.current,
+    year,
+    description,
+    technique,
+    dimensions,
+    "image": mainImage {
+      asset,
+      crop,
+      hotspot,
+      alt
+    },
+    "images": images[defined(asset._ref)] {
+      _key,
       asset,
       crop,
       hotspot,
@@ -30,6 +58,28 @@ export const ARTWORKS_QUERY = defineQuery(`
     status,
     featured,
     catalogNumber
+  }
+`)
+
+export const ARTWORK_SLUGS_QUERY = defineQuery(`
+  *[
+    _type == "artwork" &&
+    defined(slug.current) &&
+    defined(mainImage.asset._ref)
+  ] {
+    "slug": slug.current
+  }
+`)
+
+export const ARTWORK_SITEMAP_QUERY = defineQuery(`
+  *[
+    _type == "artwork" &&
+    defined(slug.current) &&
+    defined(mainImage.asset._ref)
+  ]
+    | order(_updatedAt desc) {
+    "slug": slug.current,
+    _updatedAt
   }
 `)
 

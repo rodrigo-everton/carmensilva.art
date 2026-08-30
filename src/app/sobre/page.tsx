@@ -71,7 +71,7 @@ export default function SobrePage() {
           </div>
         </section>
 
-        <section className="grid gap-10 py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20 lg:py-28">
+        <section className="grid gap-10 rounded-4xl bg-green-secondary my-16 px-10 py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20 lg:py-28">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-red/70">
               O olhar

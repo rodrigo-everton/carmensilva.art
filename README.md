@@ -49,13 +49,20 @@ Antes do deploy:
    `SUPABASE_SECRET_KEY` são credenciais exclusivas do servidor.
 3. Em **Suas integrações > Webhooks** no Mercado Pago, configure o evento
    **Pagamentos** apontando para
-   `https://SEU-DOMINIO/api/webhooks/mercadopago?source_news=webhooks`.
+   `https://www.carmemsilva.art.br/api/webhooks/mercadopago?source_news=webhooks`.
 4. Use o botão **Simular** do painel do Mercado Pago para validar o receptor. O
    retorno do navegador serve apenas como feedback; a confirmação financeira é
    feita pela consulta server-side executada após o webhook.
 
 A integração usa diretamente o `init_point` devolvido pela preferência; não é
 necessária uma Public Key do Mercado Pago no navegador.
+
+O Client ID, o Client Secret e o número da aplicação são identificadores
+opcionais neste fluxo direto. O segredo exigido pelo webhook é a **assinatura
+secreta** gerada ao salvar a configuração em **Suas integrações > Webhooks**;
+ele não é o Client Secret. Usuário, senha e código de uma conta de teste servem
+somente para entrar no checkout como comprador e não devem ser salvos no
+ambiente da aplicação.
 
 ## E-mails transacionais
 

@@ -1,10 +1,11 @@
 import Container from "@/components/ui/Container"
 import { Button } from "@/components/ui/Button"
+import Image from "next/image"
 
 //TODO: adicionar carrossel e imagens
 export default function Hero() {
   return (
-    <section className="relative isolate overflow-hidden mx-4 mt-6 bg-orange border-orange rounded-2xl text-white">
+    <section className="relative isolate overflow-hidden mx-4 mt-6 md:mx-16 md:my-8 bg-orange border-orange rounded-4xl text-white">
       <div
         aria-hidden="true"
         className="absolute -left-24 top-20 size-72 rounded-full bg-green-secondary/20 blur-3xl"
@@ -38,16 +39,15 @@ export default function Hero() {
         </div>
         
         <div className="relative mx-auto w-full max-w-md md:max-w-none" aria-hidden="true">
-          <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full border border-orange-secondary/50" />
-          <div className="absolute -bottom-7 -left-7 z-20 h-28 w-28 bg-orange" />
+          {/* <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full border border-orange-secondary/50" />
+          <div className="absolute -bottom-7 -left-7 z-20 h-28 w-28 bg-orange" /> */}
 
-          {/* <div className="relative aspect-4/5 overflow-hidden rounded-t-full border-10 border-red-secondary bg-red shadow-2xl shadow-black/20">
-            <div className="absolute inset-x-0 bottom-0 h-[46%] bg-orange-secondary" />
-            <div className="absolute -left[-18%] top-[18%] size-[70%] rounded-full bg-orange" />
-            <div className="absolute -right[-15%] top-[8%] h-[72%] w-[58%] rotate-12 rounded-full bg-green-secondary" />
-            <div className="absolute bottom[-12%] left-[14%] h-[42%] w-[30%] -rotate-12 bg-red-hover" />
-            <div className="absolute bottom[-8%] right-[8%] size-[34%] rounded-full border-12 border-white/80" />
-          </div> */}
+          <Image
+            src="/retrato.webp"
+            alt=""
+            width={844}
+            height={1019}
+          />
 
           <p className="mt-5 text-right text-xs font-semibold uppercase tracking-[0.25em] text-orange-secondary">
             Cor · Forma · Expressão

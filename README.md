@@ -46,11 +46,17 @@ Antes do deploy:
 1. Aplique, no Supabase, as migrations versionadas em `supabase/migrations/`.
 2. Copie as variáveis de `.env.example` para `.env.local` e para o ambiente da
    Vercel. `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` e
-   `SUPABASE_SECRET_KEY` são credenciais exclusivas do servidor.
-3. Em **Suas integrações > Webhooks** no Mercado Pago, configure o evento
+   `SUPABASE_SECRET_KEY` são credenciais exclusivas do servidor. Defina também
+   `MERCADOPAGO_ENVIRONMENT` (`test` ou `production`), fixe a conta com
+   `MERCADOPAGO_SELLER_ID`, use `MERCADOPAGO_SITE_ID=MLB` e configure a validade
+   em horas com `MERCADOPAGO_PREFERENCE_TTL_HOURS` (padrão: `24`).
+3. Crie um token Sanity com permissão **Editor** e salve-o somente no servidor
+   como `SANITY_API_WRITE_TOKEN`. Ele mantém a obra como `reserved` durante a
+   cobrança, `sold` após a aprovação e `available` após expiração ou reembolso.
+4. Em **Suas integrações > Webhooks** no Mercado Pago, configure o evento
    **Pagamentos** apontando para
    `https://www.carmemsilva.art.br/api/webhooks/mercadopago?source_news=webhooks`.
-4. Use o botão **Simular** do painel do Mercado Pago para validar o receptor. O
+5. Use o botão **Simular** do painel do Mercado Pago para validar o receptor. O
    retorno do navegador serve apenas como feedback; a confirmação financeira é
    feita pela consulta server-side executada após o webhook.
 

@@ -10,8 +10,11 @@ import {
   Payment,
   Preference,
   SignatureFailureReason,
+  User,
   WebhookSignatureValidator,
 } from "mercadopago"
+
+export type MercadoPagoEnvironment = "test" | "production"
 
 type CreatePreferenceInput = {
   paymentPreferenceId: string
@@ -22,9 +25,16 @@ type CreatePreferenceInput = {
   amount: number
   payerEmail?: string
   siteUrl: URL
+  expiresAt: Date
 }
 
 export type MercadoPagoPayment = Awaited<ReturnType<Payment["get"]>>
+
+export type MercadoPagoAccountIdentity = {
+  sellerId: string
+  environment: MercadoPagoEnvironment
+  siteId: string
+}
 
 export class MercadoPagoConfigurationError extends Error {
   constructor(message: string) {
@@ -36,8 +46,13 @@ export class MercadoPagoConfigurationError extends Error {
 let configuredAccessToken: string | null = null
 let preferenceClient: Preference | null = null
 let paymentClient: Payment | null = null
+let userClient: User | null = null
+let accountIdentityCacheKey: string | null = null
+let accountIdentityPromise: Promise<MercadoPagoAccountIdentity> | null = null
 
 const WEBHOOK_SIGNATURE_TOLERANCE_MS = 5 * 60 * 1000
+const DEFAULT_PREFERENCE_TTL_HOURS = 24
+const MAX_PREFERENCE_TTL_HOURS = 24 * 7
 
 function getClients() {
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN?.trim()
@@ -48,7 +63,12 @@ function getClients() {
     )
   }
 
-  if (!preferenceClient || !paymentClient || configuredAccessToken !== accessToken) {
+  if (
+    !preferenceClient ||
+    !paymentClient ||
+    !userClient ||
+    configuredAccessToken !== accessToken
+  ) {
     const config = new MercadoPagoConfig({
       accessToken,
       options: {
@@ -60,12 +80,71 @@ function getClients() {
     configuredAccessToken = accessToken
     preferenceClient = new Preference(config)
     paymentClient = new Payment(config)
+    userClient = new User(config)
+    accountIdentityCacheKey = null
+    accountIdentityPromise = null
   }
 
   return {
     preferences: preferenceClient,
     payments: paymentClient,
+    users: userClient,
   }
+}
+
+function getMercadoPagoEnvironment(): MercadoPagoEnvironment {
+  const environment = process.env.MERCADOPAGO_ENVIRONMENT?.trim().toLowerCase()
+
+  if (environment !== "test" && environment !== "production") {
+    throw new MercadoPagoConfigurationError(
+      "MERCADOPAGO_ENVIRONMENT precisa ser 'test' ou 'production'.",
+    )
+  }
+
+  return environment
+}
+
+function getExpectedMercadoPagoSellerId() {
+  const sellerId = process.env.MERCADOPAGO_SELLER_ID?.trim()
+
+  if (!sellerId || !/^\d+$/.test(sellerId)) {
+    throw new MercadoPagoConfigurationError(
+      "MERCADOPAGO_SELLER_ID precisa conter o ID numérico do vendedor.",
+    )
+  }
+
+  return sellerId
+}
+
+function getExpectedMercadoPagoSiteId() {
+  const siteId = process.env.MERCADOPAGO_SITE_ID?.trim().toUpperCase()
+
+  if (!siteId || !/^ML[A-Z]$/.test(siteId)) {
+    throw new MercadoPagoConfigurationError(
+      "MERCADOPAGO_SITE_ID precisa conter o site do vendedor, como MLB.",
+    )
+  }
+
+  return siteId
+}
+
+export function getMercadoPagoPreferenceTtlMs() {
+  const configuredTtl = process.env.MERCADOPAGO_PREFERENCE_TTL_HOURS?.trim()
+  const ttlHours = configuredTtl
+    ? Number(configuredTtl)
+    : DEFAULT_PREFERENCE_TTL_HOURS
+
+  if (
+    !Number.isInteger(ttlHours) ||
+    ttlHours < 1 ||
+    ttlHours > MAX_PREFERENCE_TTL_HOURS
+  ) {
+    throw new MercadoPagoConfigurationError(
+      `MERCADOPAGO_PREFERENCE_TTL_HOURS precisa ser um inteiro entre 1 e ${MAX_PREFERENCE_TTL_HOURS}.`,
+    )
+  }
+
+  return ttlHours * 60 * 60 * 1000
 }
 
 export function getMercadoPagoWebhookSecret() {
@@ -114,11 +193,73 @@ export function getPublicSiteUrl() {
 
 export function getMercadoPagoCheckoutConfiguration() {
   const siteUrl = getPublicSiteUrl()
+  const environment = getMercadoPagoEnvironment()
+  const sellerId = getExpectedMercadoPagoSellerId()
+  const siteId = getExpectedMercadoPagoSiteId()
+  const preferenceTtlMs = getMercadoPagoPreferenceTtlMs()
 
   getClients()
   getMercadoPagoWebhookSecret()
 
-  return {siteUrl}
+  return {siteUrl, environment, sellerId, siteId, preferenceTtlMs}
+}
+
+export async function getValidatedMercadoPagoAccount() {
+  const {environment, sellerId, siteId} = getMercadoPagoCheckoutConfiguration()
+  const cacheKey = [configuredAccessToken, environment, sellerId, siteId].join(":")
+
+  if (accountIdentityPromise && accountIdentityCacheKey === cacheKey) {
+    return accountIdentityPromise
+  }
+
+  const {users} = getClients()
+  accountIdentityCacheKey = cacheKey
+  accountIdentityPromise = (async () => {
+    const account = await users.get()
+    const accountId = account.id === undefined ? "" : String(account.id)
+    const accountSiteId = account.site_id?.trim().toUpperCase() ?? ""
+    const isTestUser = account.tags?.includes("test_user") ?? false
+
+    if (accountId !== sellerId) {
+      throw new MercadoPagoConfigurationError(
+        "O Access Token não pertence ao MERCADOPAGO_SELLER_ID configurado.",
+      )
+    }
+
+    if (accountSiteId !== siteId) {
+      throw new MercadoPagoConfigurationError(
+        "O Access Token pertence a outro site/país do Mercado Pago.",
+      )
+    }
+
+    if (environment === "test" && !isTestUser) {
+      throw new MercadoPagoConfigurationError(
+        "O ambiente de teste exige um Access Token de vendedor de teste.",
+      )
+    }
+
+    if (environment === "production" && isTestUser) {
+      throw new MercadoPagoConfigurationError(
+        "O ambiente de produção não aceita um vendedor de teste.",
+      )
+    }
+
+    if (account.status?.sell?.allow === false) {
+      throw new MercadoPagoConfigurationError(
+        "A conta Mercado Pago configurada não está habilitada para vender.",
+      )
+    }
+
+    return {sellerId: accountId, environment, siteId}
+  })()
+
+  try {
+    return await accountIdentityPromise
+  } catch (error) {
+    accountIdentityCacheKey = null
+    accountIdentityPromise = null
+    throw error
+  }
 }
 
 export async function createMercadoPagoPreference({
@@ -130,7 +271,20 @@ export async function createMercadoPagoPreference({
   amount,
   payerEmail,
   siteUrl,
+  expiresAt,
 }: CreatePreferenceInput) {
+  const expirationTimestamp = expiresAt.getTime()
+
+  if (
+    !Number.isFinite(expirationTimestamp) ||
+    expirationTimestamp <= Date.now()
+  ) {
+    throw new MercadoPagoConfigurationError(
+      "A validade da preferência precisa estar no futuro.",
+    )
+  }
+
+  const startsAt = new Date()
   const successUrl = new URL("/pagamento/sucesso", siteUrl)
   successUrl.searchParams.set("conversa", conversationId)
 
@@ -172,19 +326,33 @@ export async function createMercadoPagoPreference({
       auto_return: "approved",
       notification_url: notificationUrl.toString(),
       statement_descriptor: "CARMEM SILVA",
+      expires: true,
+      expiration_date_from: startsAt.toISOString(),
+      expiration_date_to: expiresAt.toISOString(),
     },
     requestOptions: {
       idempotencyKey: paymentPreferenceId,
     },
   })
 
-  if (!response.id || !response.init_point) {
+  const confirmedExpiration = response.expiration_date_to
+    ? Date.parse(response.expiration_date_to)
+    : Number.NaN
+
+  if (
+    !response.id ||
+    !response.init_point ||
+    response.expires !== true ||
+    !Number.isFinite(confirmedExpiration) ||
+    Math.abs(confirmedExpiration - expirationTimestamp) > 1_000
+  ) {
     throw new Error("O Mercado Pago não devolveu a preferência completa.")
   }
 
   return {
     id: response.id,
     checkoutUrl: response.init_point,
+    expiresAt: new Date(confirmedExpiration).toISOString(),
   }
 }
 

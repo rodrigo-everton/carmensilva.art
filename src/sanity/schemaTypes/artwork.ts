@@ -156,7 +156,53 @@ export const artworkType = defineType({
 
       initialValue: 'available',
 
+      readOnly: ({document}) => {
+        const commerce = document?.commerce as {saleId?: unknown} | undefined
+        return typeof commerce?.saleId === 'string'
+      },
+
       validation: (rule) => rule.required(),
+    }),
+
+    defineField({
+      name: 'commerce',
+      title: 'Controle automático de pagamento',
+      type: 'object',
+      description:
+        'Metadados mantidos automaticamente pelo fluxo de venda. Não edite manualmente.',
+      readOnly: true,
+      hidden: ({value}) => value === undefined,
+      options: {
+        collapsible: true,
+        collapsed: true,
+      },
+      fields: [
+        defineField({
+          name: 'saleId',
+          title: 'ID da venda',
+          type: 'string',
+        }),
+        defineField({
+          name: 'paymentPreferenceId',
+          title: 'ID da preferência',
+          type: 'string',
+        }),
+        defineField({
+          name: 'providerPaymentId',
+          title: 'ID do pagamento no provedor',
+          type: 'string',
+        }),
+        defineField({
+          name: 'reservationExpiresAt',
+          title: 'Reserva válida até',
+          type: 'datetime',
+        }),
+        defineField({
+          name: 'updatedAt',
+          title: 'Última sincronização',
+          type: 'datetime',
+        }),
+      ],
     }),
 
     defineField({

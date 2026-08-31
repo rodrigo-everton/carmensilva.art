@@ -8,6 +8,7 @@ type PaymentMessageCardProps = {
     currency: string
     status: string
     checkoutUrl: string | null
+    expiresAt: string | null
   }
   timestamp: string
 }
@@ -102,9 +103,14 @@ export default function PaymentMessageCard({
   timestamp,
 }: PaymentMessageCardProps) {
   const checkoutUrl = getSafeCheckoutUrl(preference.checkoutUrl)
-  const statusDetails = getStatusDetails(preference.status)
+  const expirationTimestamp = preference.expiresAt
+    ? Date.parse(preference.expiresAt)
+    : Number.NaN
+  const expiredByTime = preference.status === "expired"
+  const effectiveStatus = preference.status
+  const statusDetails = getStatusDetails(effectiveStatus)
   const canOpenCheckout =
-    checkoutUrl && ["active", "pending"].includes(preference.status)
+    checkoutUrl && ["active", "pending"].includes(effectiveStatus)
 
   return (
     <article
@@ -149,11 +155,22 @@ export default function PaymentMessageCard({
             {variant === "customer" ? "Pagar com Mercado Pago" : "Abrir checkout"}
             <ExternalLink className="size-4" aria-hidden="true" />
           </a>
-        ) : preference.status === "creating" ? (
+        ) : effectiveStatus === "creating" ? (
           <p className="mt-4 rounded-xl bg-green-secondary/45 px-3 py-2.5 text-sm text-green-hover">
             O link de pagamento está sendo preparado.
           </p>
         ) : null}
+
+        {Number.isFinite(expirationTimestamp) && (
+          <p className="mt-3 text-xs text-black/50">
+            {expiredByTime ? "Validade encerrada em " : "Link válido até "}
+            {new Intl.DateTimeFormat("pt-BR", {
+              dateStyle: "short",
+              timeStyle: "short",
+              timeZone: "America/Sao_Paulo",
+            }).format(new Date(expirationTimestamp))}
+          </p>
+        )}
 
         <p className="mt-4 flex items-center gap-1.5 text-[0.68rem] text-black/45">
           <Clock3 className="size-3" aria-hidden="true" />

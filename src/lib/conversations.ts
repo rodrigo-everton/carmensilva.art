@@ -36,6 +36,7 @@ export type MessagePaymentPreferenceRow = {
   currency: string
   status: string
   checkout_url: string | null
+  expires_at: string | null
 }
 
 export type ConversationMessageRow = MessageRow & {
@@ -69,7 +70,8 @@ export async function loadConversationMessages(conversationId: string) {
         amount_cents,
         currency,
         status,
-        checkout_url
+        checkout_url,
+        expires_at
       )
     `)
     .eq("conversation_id", conversationId)

@@ -46,6 +46,7 @@ type PaymentPreferenceRow = {
   currency: string
   status: string
   checkout_url: string | null
+  expires_at: string | null
 }
 
 type PaymentPreferenceView = {
@@ -54,6 +55,7 @@ type PaymentPreferenceView = {
   currency: string
   status: string
   checkoutUrl: string | null
+  expiresAt: string | null
 }
 
 function formatDate(value: string) {
@@ -92,12 +94,21 @@ function normalizePaymentPreference(
     return null
   }
 
+  const expirationTimestamp = preference.expires_at
+    ? Date.parse(preference.expires_at)
+    : Number.NaN
+  const expiredByTime =
+    ["creating", "active", "pending"].includes(preference.status) &&
+    Number.isFinite(expirationTimestamp) &&
+    expirationTimestamp <= Date.now()
+
   return {
     id: preference.id,
     amountCents,
     currency: preference.currency,
-    status: preference.status,
-    checkoutUrl: preference.checkout_url,
+    status: expiredByTime ? "expired" : preference.status,
+    checkoutUrl: expiredByTime ? null : preference.checkout_url,
+    expiresAt: preference.expires_at,
   }
 }
 
@@ -160,7 +171,7 @@ export default async function AdminMensagemPage({
       loadConversationMessages(activeConversation.id),
       supabase
         .from("payment_preferences")
-        .select("id,amount_cents,currency,status,checkout_url")
+        .select("id,amount_cents,currency,status,checkout_url,expires_at")
         .eq("conversation_id", activeConversation.id)
         .in("status", ["creating", "active"])
         .order("created_at", {ascending: false})
@@ -173,6 +184,9 @@ export default async function AdminMensagemPage({
     activePaymentPreference = normalizePaymentPreference(
       paymentPreferenceResult.data as PaymentPreferenceRow | null,
     )
+    if (activePaymentPreference?.status === "expired") {
+      activePaymentPreference = null
+    }
     paymentPreferenceLookupFailed = Boolean(paymentPreferenceResult.error)
   }
 

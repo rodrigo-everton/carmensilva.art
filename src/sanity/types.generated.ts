@@ -57,6 +57,13 @@ export type Artwork = {
     _key: string;
   }>;
   status: "available" | "reserved" | "sold" | "exhibition";
+  commerce?: {
+    saleId?: string;
+    paymentPreferenceId?: string;
+    providerPaymentId?: string;
+    reservationExpiresAt?: string;
+    updatedAt?: string;
+  };
   salePosition?: number;
   featured?: boolean;
   catalogNumber?: string;
@@ -327,6 +334,23 @@ export type ARTWORKS_BY_IDS_QUERY_RESULT = Array<{
   catalogNumber: string | null;
 }>;
 
+// Source: src/sanity/queries/artwork.ts
+// Variable: ARTWORK_COMMERCE_QUERY
+// Query: *[    _type == "artwork" &&    _id in $ids  ] {    _id,    _rev,    status,    "slug": slug.current,    commerce {      saleId,      paymentPreferenceId,      providerPaymentId,      reservationExpiresAt,      updatedAt    }  }
+export type ARTWORK_COMMERCE_QUERY_RESULT = Array<{
+  _id: string;
+  _rev: string;
+  status: "available" | "exhibition" | "reserved" | "sold";
+  slug: string;
+  commerce: {
+    saleId: string | null;
+    paymentPreferenceId: string | null;
+    providerPaymentId: string | null;
+    reservationExpiresAt: string | null;
+    updatedAt: string | null;
+  } | null;
+}>;
+
 // Query TypeMap
 import "@sanity/client";
 declare module "@sanity/client" {
@@ -338,5 +362,6 @@ declare module "@sanity/client" {
     '\n  *[\n    _type == "artwork" &&\n    defined(slug.current) &&\n    defined(mainImage.asset._ref)\n  ]\n    | order(_updatedAt desc) {\n    "slug": slug.current,\n    _updatedAt\n  }\n': ARTWORK_SITEMAP_QUERY_RESULT;
     '\n  *[_type == "artwork" && _id == $id && status == "available"][0] {\n    "id": _id,\n    title,\n    status\n  }\n': ARTWORK_INTEREST_QUERY_RESULT;
     '\n  *[_type == "artwork" && _id in $ids] {\n    "id": _id,\n    title,\n    year,\n    technique,\n    dimensions,\n    status,\n    catalogNumber\n  }\n': ARTWORKS_BY_IDS_QUERY_RESULT;
+    '\n  *[\n    _type == "artwork" &&\n    _id in $ids\n  ] {\n    _id,\n    _rev,\n    status,\n    "slug": slug.current,\n    commerce {\n      saleId,\n      paymentPreferenceId,\n      providerPaymentId,\n      reservationExpiresAt,\n      updatedAt\n    }\n  }\n': ARTWORK_COMMERCE_QUERY_RESULT;
   }
 }

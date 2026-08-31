@@ -19,6 +19,7 @@ export type ExistingPaymentPreference = {
   currency: string
   status: string
   checkoutUrl: string | null
+  expiresAt: string | null
 }
 
 type GeneratePaymentButtonProps = {
@@ -238,6 +239,8 @@ export default function GeneratePaymentButton({
         nextPreference.amountCents <= 0 ||
         typeof nextPreference.currency !== "string" ||
         typeof nextPreference.status !== "string" ||
+        (nextPreference.expiresAt !== null &&
+          typeof nextPreference.expiresAt !== "string") ||
         (nextPreference.checkoutUrl !== null &&
           typeof nextPreference.checkoutUrl !== "string")
       ) {

@@ -7,13 +7,23 @@ import {isAdmin} from "@/lib/auth"
 import {
   createMercadoPagoPreference,
   getMercadoPagoCheckoutConfiguration,
+  getValidatedMercadoPagoAccount,
   isDefinitiveMercadoPagoError,
   MercadoPagoConfigurationError,
 } from "@/lib/mercadopago"
 import {formatBrlFromCents, parseBrlAmount} from "@/lib/money"
 import {createSupabaseAdminClient} from "@/lib/supabase-admin"
 import {client as sanityClient} from "@/sanity/lib/client"
+import {
+  ArtworkCommerceConflictError,
+  releaseArtworkReservation,
+  reserveArtworkForPayment,
+} from "@/sanity/lib/artwork-commerce"
 import {createClient} from "@/sanity/lib/supabase/server"
+import {
+  assertSanityWriteConfigured,
+  SanityWriteConfigurationError,
+} from "@/sanity/lib/write-client"
 import {ARTWORKS_BY_IDS_QUERY} from "@/sanity/queries/artwork"
 
 export const runtime = "nodejs"
@@ -42,7 +52,21 @@ type PaymentPreferenceRow = {
   currency: string
   status: string
   message_id: string
+  expires_at: string
+  provider_expiration_configured_at: string | null
+  environment: string
+  seller_id: string | null
 }
+
+type ExpiredPreferenceRow = {
+  preference_id: string
+  sale_id: string
+  artwork_id: string
+  reservation_released: boolean
+}
+
+const PAYMENT_PREFERENCE_SELECT =
+  "id,sale_id,conversation_id,created_by,provider_preference_id,checkout_url,amount_cents,currency,status,message_id,expires_at,provider_expiration_configured_at,environment,seller_id"
 
 function errorResponse(message: string, status: number) {
   return NextResponse.json({error: message}, {status})
@@ -64,6 +88,7 @@ function preferenceResponse(
         currency: preference.currency,
         status: preference.status,
         checkoutUrl: preference.checkout_url,
+        expiresAt: preference.expires_at,
       },
       existing,
     },
@@ -109,15 +134,17 @@ async function releaseSaleAfterFailure(
   supabase: SupabaseClient,
   saleId: string,
 ) {
-  const {error} = await supabase
-    .from("sales")
-    .update({sale_status: "negotiating", updated_at: new Date().toISOString()})
-    .eq("id", saleId)
-    .eq("sale_status", "awaiting_payment")
+  const {data, error} = await supabase.rpc(
+    "release_mercadopago_sale_if_unreserved",
+    {p_sale_id: saleId},
+  )
 
   if (error) {
     console.error("Não foi possível liberar a venda após a falha.", error.message)
+    return false
   }
+
+  return data === true
 }
 
 export async function POST(request: Request) {
@@ -162,13 +189,29 @@ export async function POST(request: Request) {
     )
   }
 
-  let siteUrl: URL
+  let checkoutConfiguration: ReturnType<
+    typeof getMercadoPagoCheckoutConfiguration
+  >
+  let accountIdentity: Awaited<ReturnType<typeof getValidatedMercadoPagoAccount>>
 
   try {
-    siteUrl = getMercadoPagoCheckoutConfiguration().siteUrl
+    checkoutConfiguration = getMercadoPagoCheckoutConfiguration()
+    assertSanityWriteConfigured()
+    accountIdentity = await getValidatedMercadoPagoAccount()
   } catch (error) {
-    console.error("Configuração do Mercado Pago indisponível.", error)
-    return errorResponse("O Mercado Pago ainda não está configurado.", 503)
+    console.error("Configuração do checkout indisponível.", error)
+
+    if (
+      error instanceof MercadoPagoConfigurationError ||
+      error instanceof SanityWriteConfigurationError
+    ) {
+      return errorResponse("O checkout ainda não está configurado.", 503)
+    }
+
+    return errorResponse(
+      "Não foi possível validar a conta do Mercado Pago. Tente novamente.",
+      502,
+    )
   }
 
   let supabase: SupabaseClient
@@ -195,13 +238,51 @@ export async function POST(request: Request) {
     return errorResponse("Essa conversa não está disponível.", 404)
   }
 
+  const {data: expiredPreferenceData, error: expirePreferenceError} =
+    await supabase.rpc("expire_mercadopago_preferences", {
+      p_conversation_id: conversation.id,
+    })
+
+  if (expirePreferenceError) {
+    console.error(
+      "Não foi possível expirar cobranças antigas.",
+      expirePreferenceError.message,
+    )
+    return errorResponse("A estrutura de validade dos pagamentos não está disponível.", 503)
+  }
+
+  for (const expiredPreference of
+    (expiredPreferenceData ?? []) as ExpiredPreferenceRow[]) {
+    if (!expiredPreference.reservation_released) continue
+
+    try {
+      await releaseArtworkReservation({
+        artworkId: expiredPreference.artwork_id,
+        saleId: expiredPreference.sale_id,
+        paymentPreferenceId: expiredPreference.preference_id,
+      })
+    } catch (error) {
+      console.error(
+        "A cobrança expirou, mas a reserva da obra não pôde ser liberada.",
+        error,
+      )
+      return errorResponse(
+        "A cobrança expirou, mas a disponibilidade da obra ainda está sendo sincronizada.",
+        502,
+      )
+    }
+  }
+
   let artwork: {
     title: string
     status: string | null
   } | null = null
 
   try {
-    const artworks = await sanityClient.withConfig({useCdn: false}).fetch(
+    const artworks = await sanityClient.withConfig({
+      useCdn: false,
+      perspective: "published",
+    }).fetch(
       ARTWORKS_BY_IDS_QUERY,
       {ids: [conversation.artwork_id]},
     )
@@ -216,9 +297,7 @@ export async function POST(request: Request) {
 
   const {data: activePreferenceData, error: activePreferenceError} = await supabase
     .from("payment_preferences")
-    .select(
-      "id,sale_id,conversation_id,created_by,provider_preference_id,checkout_url,amount_cents,currency,status,message_id",
-    )
+    .select(PAYMENT_PREFERENCE_SELECT)
     .eq("conversation_id", conversation.id)
     .in("status", ["creating", "active"])
     .order("created_at", {ascending: false})
@@ -236,8 +315,56 @@ export async function POST(request: Request) {
   let paymentPreference =
     (activePreferenceData as PaymentPreferenceRow | null) ?? null
 
+  if (
+    paymentPreference &&
+    (paymentPreference.environment !== accountIdentity.environment ||
+      paymentPreference.seller_id !== accountIdentity.sellerId)
+  ) {
+    const {error: supersedeError} = await supabase
+      .from("payment_preferences")
+      .update({status: "superseded", updated_at: new Date().toISOString()})
+      .eq("id", paymentPreference.id)
+      .in("status", ["creating", "active"])
+
+    if (supersedeError) {
+      console.error(
+        "Não foi possível encerrar a cobrança de outro ambiente.",
+        supersedeError.message,
+      )
+      return errorResponse("Não foi possível substituir a cobrança anterior.", 500)
+    }
+
+    const released = await releaseSaleAfterFailure(
+      supabase,
+      paymentPreference.sale_id,
+    )
+
+    if (released) {
+      try {
+        await releaseArtworkReservation({
+          artworkId: conversation.artwork_id,
+          saleId: paymentPreference.sale_id,
+          paymentPreferenceId: paymentPreference.id,
+        })
+      } catch (error) {
+        console.error(
+          "Não foi possível liberar a reserva da cobrança substituída.",
+          error,
+        )
+      }
+    }
+
+    paymentPreference = null
+  }
+
   if (paymentPreference?.status === "active" && paymentPreference.checkout_url) {
     try {
+      await reserveArtworkForPayment({
+        artworkId: conversation.artwork_id,
+        saleId: paymentPreference.sale_id,
+        paymentPreferenceId: paymentPreference.id,
+        expiresAt: paymentPreference.expires_at,
+      })
       await ensurePaymentMessage(supabase, paymentPreference, artwork.title)
     } catch (error) {
       console.error("Não foi possível reenviar a cobrança existente.", error)
@@ -301,6 +428,31 @@ export async function POST(request: Request) {
     }
 
     if (sale) {
+      const {data: protectedPayment, error: protectedPaymentError} = await supabase
+        .from("payments")
+        .select("id,status")
+        .eq("sale_id", sale.id)
+        .in("status", ["pending", "approved"])
+        .limit(1)
+        .maybeSingle()
+
+      if (protectedPaymentError) {
+        console.error(
+          "Não foi possível verificar pagamentos em andamento.",
+          protectedPaymentError.message,
+        )
+        return errorResponse("Não foi possível confirmar o estado da venda.", 500)
+      }
+
+      if (protectedPayment) {
+        return errorResponse(
+          "Já existe um pagamento em processamento ou confirmado para esta obra.",
+          409,
+        )
+      }
+    }
+
+    if (sale) {
       const {data: updatedSale, error: updateSaleError} = await supabase
         .from("sales")
         .update({
@@ -357,6 +509,9 @@ export async function POST(request: Request) {
       sale = createdSale as SaleRow
     }
 
+    const expiresAt = new Date(
+      Date.now() + checkoutConfiguration.preferenceTtlMs,
+    ).toISOString()
     const newPreference = {
       id: randomUUID(),
       sale_id: sale.id,
@@ -367,13 +522,14 @@ export async function POST(request: Request) {
       currency: "BRL",
       status: "creating",
       message_id: randomUUID(),
+      expires_at: expiresAt,
+      environment: accountIdentity.environment,
+      seller_id: accountIdentity.sellerId,
     }
     const {data: createdPreference, error: createPreferenceError} = await supabase
       .from("payment_preferences")
       .insert(newPreference)
-      .select(
-        "id,sale_id,conversation_id,created_by,provider_preference_id,checkout_url,amount_cents,currency,status,message_id",
-      )
+      .select(PAYMENT_PREFERENCE_SELECT)
       .single()
 
     if (createPreferenceError || !createdPreference) {
@@ -398,6 +554,47 @@ export async function POST(request: Request) {
     return errorResponse("Não foi possível preparar o pagamento.", 500)
   }
 
+  try {
+    await reserveArtworkForPayment({
+      artworkId: conversation.artwork_id,
+      saleId: sale.id,
+      paymentPreferenceId: paymentPreference.id,
+      expiresAt: paymentPreference.expires_at,
+    })
+  } catch (error) {
+    console.error("Não foi possível reservar a obra no Sanity.", error)
+
+    await supabase
+      .from("payment_preferences")
+      .update({status: "failed", updated_at: new Date().toISOString()})
+      .eq("id", paymentPreference.id)
+      .eq("status", "creating")
+
+    const released = await releaseSaleAfterFailure(supabase, sale.id)
+
+    if (released) {
+      try {
+        await releaseArtworkReservation({
+          artworkId: conversation.artwork_id,
+          saleId: sale.id,
+          paymentPreferenceId: paymentPreference.id,
+        })
+      } catch (releaseError) {
+        console.error(
+          "Não foi possível confirmar a liberação da reserva no Sanity.",
+          releaseError,
+        )
+      }
+    }
+
+    return errorResponse(
+      error instanceof ArtworkCommerceConflictError
+        ? "Essa obra já está reservada por outra negociação."
+        : "Não foi possível sincronizar a reserva da obra.",
+      error instanceof ArtworkCommerceConflictError ? 409 : 502,
+    )
+  }
+
   const {
     data: {user: customer},
     error: customerError,
@@ -407,7 +604,11 @@ export async function POST(request: Request) {
     console.error("Não foi possível pré-preencher o e-mail do cliente.", customerError.message)
   }
 
-  let mercadoPagoPreference: {id: string; checkoutUrl: string}
+  let mercadoPagoPreference: {
+    id: string
+    checkoutUrl: string
+    expiresAt: string
+  }
 
   try {
     mercadoPagoPreference = await createMercadoPagoPreference({
@@ -418,7 +619,8 @@ export async function POST(request: Request) {
       adminUserId: paymentPreference.created_by,
       amount: paymentPreference.amount_cents / 100,
       payerEmail: customer?.email,
-      siteUrl,
+      siteUrl: checkoutConfiguration.siteUrl,
+      expiresAt: new Date(paymentPreference.expires_at),
     })
   } catch (error) {
     console.error("Não foi possível criar a preferência no Mercado Pago.", error)
@@ -429,7 +631,22 @@ export async function POST(request: Request) {
         .update({status: "failed", updated_at: new Date().toISOString()})
         .eq("id", paymentPreference.id)
         .eq("status", "creating")
-      await releaseSaleAfterFailure(supabase, sale.id)
+      const released = await releaseSaleAfterFailure(supabase, sale.id)
+
+      if (released) {
+        try {
+          await releaseArtworkReservation({
+            artworkId: conversation.artwork_id,
+            saleId: sale.id,
+            paymentPreferenceId: paymentPreference.id,
+          })
+        } catch (releaseError) {
+          console.error(
+            "Não foi possível liberar a obra após a falha definitiva.",
+            releaseError,
+          )
+        }
+      }
     }
 
     return errorResponse(
@@ -446,13 +663,15 @@ export async function POST(request: Request) {
       provider_preference_id: mercadoPagoPreference.id,
       checkout_url: mercadoPagoPreference.checkoutUrl,
       status: "active",
+      expires_at: mercadoPagoPreference.expiresAt,
+      provider_expiration_configured_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("id", paymentPreference.id)
-    .select(
-      "id,sale_id,conversation_id,created_by,provider_preference_id,checkout_url,amount_cents,currency,status,message_id",
-    )
-    .single()
+    .eq("status", "creating")
+    .gt("expires_at", new Date().toISOString())
+    .select(PAYMENT_PREFERENCE_SELECT)
+    .maybeSingle()
 
   if (activateError || !activatedPreference) {
     console.error("Não foi possível salvar o link de pagamento.", activateError?.message)

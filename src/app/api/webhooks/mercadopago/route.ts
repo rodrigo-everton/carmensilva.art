@@ -5,12 +5,17 @@ import type {SupabaseClient} from "@supabase/supabase-js"
 
 import {
   getMercadoPagoPayment,
+  getValidatedMercadoPagoAccount,
   InvalidWebhookSignatureError,
   MercadoPagoConfigurationError,
   validateMercadoPagoWebhookSignature,
 } from "@/lib/mercadopago"
 import {numberToCents} from "@/lib/money"
 import {createSupabaseAdminClient} from "@/lib/supabase-admin"
+import {
+  markArtworkAsSold,
+  releaseArtworkAfterRefund,
+} from "@/sanity/lib/artwork-commerce"
 import type {PaymentStatus} from "@/types/payment"
 
 export const runtime = "nodejs"
@@ -33,6 +38,16 @@ type PaymentPreferenceRow = {
   amount_cents: number
   currency: string
   status: string
+  provider_preference_id: string | null
+  created_by: string
+  environment: string
+  seller_id: string | null
+}
+
+type SaleRow = {
+  id: string
+  artwork_id: string
+  sale_status: string
 }
 
 function normalizedPaymentStatus(providerStatus: string): PaymentStatus {
@@ -124,9 +139,15 @@ export async function POST(request: NextRequest) {
   }
 
   let payment: Awaited<ReturnType<typeof getMercadoPagoPayment>>
+  let accountIdentity: Awaited<ReturnType<typeof getValidatedMercadoPagoAccount>>
 
   try {
-    payment = await getMercadoPagoPayment(dataId)
+    const canonicalResources = await Promise.all([
+      getMercadoPagoPayment(dataId),
+      getValidatedMercadoPagoAccount(),
+    ])
+    payment = canonicalResources[0]
+    accountIdentity = canonicalResources[1]
   } catch (error) {
     console.error("Não foi possível consultar o pagamento no Mercado Pago.", {
       paymentId: dataId,
@@ -134,8 +155,13 @@ export async function POST(request: NextRequest) {
       error,
     })
     return NextResponse.json(
-      {error: "Não foi possível consultar o pagamento."},
-      {status: 502},
+      {
+        error:
+          error instanceof MercadoPagoConfigurationError
+            ? "Mercado Pago não configurado."
+            : "Não foi possível consultar o pagamento.",
+      },
+      {status: error instanceof MercadoPagoConfigurationError ? 503 : 502},
     )
   }
 
@@ -156,7 +182,9 @@ export async function POST(request: NextRequest) {
 
   const {data: preferenceData, error: preferenceError} = await supabase
     .from("payment_preferences")
-    .select("id,sale_id,conversation_id,amount_cents,currency,status")
+    .select(
+      "id,sale_id,conversation_id,amount_cents,currency,status,provider_preference_id,created_by,environment,seller_id",
+    )
     .eq("id", externalReference)
     .maybeSingle()
 
@@ -170,13 +198,69 @@ export async function POST(request: NextRequest) {
   }
 
   const preference = preferenceData as PaymentPreferenceRow
+  const collectorId =
+    payment.collector_id === undefined || payment.collector_id === null
+      ? null
+      : String(payment.collector_id)
+
+  if (
+    preference.environment !== accountIdentity.environment ||
+    preference.seller_id !== accountIdentity.sellerId
+  ) {
+    console.warn("Pagamento recebido para outro ambiente ou vendedor.", {
+      paymentId: dataId,
+      requestId,
+      preferenceId: preference.id,
+    })
+    return ignoredResponse("mismatched_preference_environment")
+  }
+
+  if (collectorId !== accountIdentity.sellerId) {
+    console.warn("O coletor do pagamento não é o vendedor configurado.", {
+      paymentId: dataId,
+      requestId,
+      preferenceId: preference.id,
+    })
+    return ignoredResponse("mismatched_payment_collector")
+  }
+
+  if (
+    accountIdentity.environment === "production" &&
+    payment.live_mode !== true
+  ) {
+    console.warn("Pagamento de teste rejeitado no ambiente de produção.", {
+      paymentId: dataId,
+      requestId,
+      preferenceId: preference.id,
+    })
+    return ignoredResponse("test_payment_in_production")
+  }
+
+  const {data: saleData, error: saleError} = await supabase
+    .from("sales")
+    .select("id,artwork_id,sale_status")
+    .eq("id", preference.sale_id)
+    .maybeSingle()
+
+  if (saleError || !saleData) {
+    console.error("Não foi possível localizar a venda do pagamento.", {
+      paymentId: dataId,
+      requestId,
+      error: saleError?.message,
+    })
+    return NextResponse.json({error: "Falha ao conciliar a venda."}, {status: 500})
+  }
+
+  const sale = saleData as SaleRow
   const metadataPreferenceId = metadataString(
     payment.metadata,
     "payment_preference_id",
   )
   const metadataConversationId = metadataString(payment.metadata, "conversation_id")
+  const metadataArtworkId = metadataString(payment.metadata, "artwork_id")
+  const metadataCreatedBy = metadataString(payment.metadata, "created_by")
 
-  if (metadataPreferenceId && metadataPreferenceId !== preference.id) {
+  if (metadataPreferenceId !== preference.id) {
     console.warn("Metadata divergente no pagamento do Mercado Pago.", {
       paymentId: dataId,
       requestId,
@@ -184,12 +268,28 @@ export async function POST(request: NextRequest) {
     return ignoredResponse("mismatched_preference_metadata")
   }
 
-  if (metadataConversationId && metadataConversationId !== preference.conversation_id) {
+  if (metadataConversationId !== preference.conversation_id) {
     console.warn("Conversa divergente no pagamento do Mercado Pago.", {
       paymentId: dataId,
       requestId,
     })
     return ignoredResponse("mismatched_conversation_metadata")
+  }
+
+  if (metadataArtworkId !== sale.artwork_id) {
+    console.warn("Obra divergente no pagamento do Mercado Pago.", {
+      paymentId: dataId,
+      requestId,
+    })
+    return ignoredResponse("mismatched_artwork_metadata")
+  }
+
+  if (metadataCreatedBy !== preference.created_by) {
+    console.warn("Criador divergente no pagamento do Mercado Pago.", {
+      paymentId: dataId,
+      requestId,
+    })
+    return ignoredResponse("mismatched_creator_metadata")
   }
 
   const amountCents = numberToCents(payment.transaction_amount)
@@ -243,6 +343,99 @@ export async function POST(request: NextRequest) {
       error: recordError.message,
     })
     return NextResponse.json({error: "Falha ao registrar o pagamento."}, {status: 500})
+  }
+
+  const [finalSaleResult, finalPreferenceResult, approvedPaymentResult] =
+    await Promise.all([
+      supabase
+        .from("sales")
+        .select("id,artwork_id,sale_status")
+        .eq("id", preference.sale_id)
+        .single(),
+      supabase
+        .from("payment_preferences")
+        .select("id,status")
+        .eq("id", preference.id)
+        .single(),
+      supabase
+        .from("payments")
+        .select("provider_payment_id")
+        .eq("sale_id", preference.sale_id)
+        .eq("status", "approved")
+        .not("provider_payment_id", "is", null)
+        .order("paid_at", {ascending: true, nullsFirst: false})
+        .limit(1)
+        .maybeSingle(),
+    ])
+
+  if (
+    finalSaleResult.error ||
+    finalPreferenceResult.error ||
+    approvedPaymentResult.error ||
+    !finalSaleResult.data ||
+    !finalPreferenceResult.data
+  ) {
+    console.error("O pagamento foi salvo, mas o estado final não pôde ser lido.", {
+      paymentId: dataId,
+      requestId,
+      saleError: finalSaleResult.error?.message,
+      preferenceError: finalPreferenceResult.error?.message,
+      approvedPaymentError: approvedPaymentResult.error?.message,
+    })
+    return NextResponse.json(
+      {error: "Falha ao confirmar o estado final do pagamento."},
+      {status: 500},
+    )
+  }
+
+  const finalSale = finalSaleResult.data as SaleRow
+  const finalPreference = finalPreferenceResult.data as {
+    id: string
+    status: string
+  }
+
+  try {
+    if (
+      ["paid", "preparing_delivery", "shipped", "delivered", "completed"].includes(
+        finalSale.sale_status,
+      )
+    ) {
+      const approvedProviderPaymentId =
+        approvedPaymentResult.data?.provider_payment_id
+
+      if (!approvedProviderPaymentId) {
+        throw new Error(
+          "A venda está paga, mas o pagamento aprovado não foi localizado.",
+        )
+      }
+
+      await markArtworkAsSold({
+        artworkId: finalSale.artwork_id,
+        saleId: finalSale.id,
+        paymentPreferenceId: finalPreference.id,
+        providerPaymentId: String(approvedProviderPaymentId),
+      })
+    } else if (
+      finalSale.sale_status === "cancelled" &&
+      finalPreference.status === "refunded"
+    ) {
+      await releaseArtworkAfterRefund({
+        artworkId: finalSale.artwork_id,
+        saleId: finalSale.id,
+        paymentPreferenceId: finalPreference.id,
+      })
+    }
+  } catch (error) {
+    console.error("Pagamento salvo, mas a obra não foi sincronizada no Sanity.", {
+      paymentId: dataId,
+      requestId,
+      preferenceId: preference.id,
+      error,
+    })
+    return NextResponse.json(
+      {error: "Falha ao sincronizar a disponibilidade da obra."},
+      {status: 500},
+    )
   }
 
   revalidatePath("/admin/venda")

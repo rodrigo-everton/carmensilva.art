@@ -25,6 +25,10 @@ export type PaymentPreferenceRow = {
   currency: string
   status: PaymentPreferenceStatus
   message_id: string | null
+  expires_at: string
+  provider_expiration_configured_at: string | null
+  environment: "test" | "production" | "unclassified"
+  seller_id: string | null
   created_at: string
   updated_at: string
 }
@@ -41,6 +45,10 @@ export type PaymentPreference = {
   currency: string
   status: PaymentPreferenceStatus
   messageId: string | null
+  expiresAt: string
+  providerExpirationConfiguredAt: string | null
+  environment: "test" | "production" | "unclassified"
+  sellerId: string | null
   createdAt: string
   updatedAt: string
 }

@@ -135,3 +135,22 @@ export const ARTWORKS_BY_IDS_QUERY = defineQuery(`
     catalogNumber
   }
 `)
+
+export const ARTWORK_COMMERCE_QUERY = defineQuery(`
+  *[
+    _type == "artwork" &&
+    _id in $ids
+  ] {
+    _id,
+    _rev,
+    status,
+    "slug": slug.current,
+    commerce {
+      saleId,
+      paymentPreferenceId,
+      providerPaymentId,
+      reservationExpiresAt,
+      updatedAt
+    }
+  }
+`)

@@ -5,7 +5,7 @@ import {AlertCircle, ArrowDownRight, ArrowRight, CircleCheck} from "lucide-react
 import ArtworkGrid from "@/components/artwork/ArtworkGrid"
 import Container from "@/components/ui/Container"
 import {sanityFetch} from "@/sanity/lib/live"
-import {ARTWORKS_QUERY} from "@/sanity/queries/artwork"
+import {SALE_ARTWORKS_QUERY} from "@/sanity/queries/artwork"
 
 export const metadata: Metadata = {
   title: "Obras à venda",
@@ -23,8 +23,7 @@ export default async function VendaPage({searchParams}: VendaPageProps) {
     ? query.interesse[0]
     : query.interesse
   const {data: saleArtworks} = await sanityFetch({
-    query: ARTWORKS_QUERY,
-    params: {statuses: ["available", "reserved"]},
+    query: SALE_ARTWORKS_QUERY,
     stega: false,
   })
 

@@ -160,6 +160,30 @@ export const artworkType = defineType({
     }),
 
     defineField({
+      name: 'salePosition',
+      title: 'Posição na venda',
+      type: 'number',
+      description:
+        'Quanto menor o número, antes a obra aparece em /venda. Ex.: 1 coloca a obra na primeira posição.',
+      hidden: ({document}) =>
+        document?.status !== 'available' && document?.status !== 'reserved',
+      validation: (rule) =>
+        rule
+          .integer()
+          .min(1)
+          .custom((value, context) => {
+            const status = context.document?.status
+            const isForSale = status === 'available' || status === 'reserved'
+
+            if (isForSale && typeof value !== 'number') {
+              return 'Informe a posição da obra na página de venda.'
+            }
+
+            return true
+          }),
+    }),
+
+    defineField({
       name: 'featured',
       title: 'Obra em destaque',
       type: 'boolean',

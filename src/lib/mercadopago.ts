@@ -128,17 +128,14 @@ export async function createMercadoPagoPreference({
   payerEmail,
   siteUrl,
 }: CreatePreferenceInput) {
-  const returnUrl = new URL("/mensagem", siteUrl)
-  returnUrl.searchParams.set("conversa", conversationId)
+  const successUrl = new URL("/pagamento/sucesso", siteUrl)
+  successUrl.searchParams.set("conversa", conversationId)
 
-  const successUrl = new URL(returnUrl)
-  successUrl.searchParams.set("pagamento", "sucesso")
+  const pendingUrl = new URL("/pagamento/pendente", siteUrl)
+  pendingUrl.searchParams.set("conversa", conversationId)
 
-  const pendingUrl = new URL(returnUrl)
-  pendingUrl.searchParams.set("pagamento", "pendente")
-
-  const failureUrl = new URL(returnUrl)
-  failureUrl.searchParams.set("pagamento", "falha")
+  const failureUrl = new URL("/pagamento/falha", siteUrl)
+  failureUrl.searchParams.set("conversa", conversationId)
 
   const notificationUrl = new URL("/api/webhooks/mercadopago", siteUrl)
   notificationUrl.searchParams.set("source_news", "webhooks")

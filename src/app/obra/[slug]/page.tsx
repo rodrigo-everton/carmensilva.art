@@ -1,10 +1,13 @@
 import type {Metadata} from "next"
 import Image from "next/image"
 import Link from "next/link"
-import {ArrowLeft, Images} from "lucide-react"
+import {ArrowLeft} from "lucide-react"
 import {notFound} from "next/navigation"
 import {cache} from "react"
 
+import ArtworkCarousel, {
+  type ArtworkCarouselImage,
+} from "@/components/artwork/ArtworkCarousel"
 import ArtworkInterestButton from "@/components/artwork/ArtworkInterestButton"
 import ExpandableDescription from "@/components/artwork/ExpandableDescription"
 import Container from "@/components/ui/Container"
@@ -106,6 +109,20 @@ export default async function ArtworkPage({params}: ArtworkPageProps) {
   const status = artworkStatusDetails[artwork.status]
   const dimensions = formatArtworkDimensions(artwork.dimensions)
   const galleryImages = artwork.images ?? []
+  const mainImageUrl = urlFor(artwork.image).width(1800).quality(90).url()
+  const carouselImages: ArtworkCarouselImage[] = [
+    {
+      id: "main-image",
+      src: mainImageUrl,
+      alt: artwork.image.alt ?? artwork.title,
+    },
+    ...galleryImages.map((image, index) => ({
+      id: `gallery-${image._key}`,
+      src: urlFor(image).width(1800).quality(90).url(),
+      alt: image.alt ?? `${artwork.title} — detalhe ${index + 1}`,
+    })),
+  ]
+  const carouselStructureKey = carouselImages.map(({id}) => id).join(":")
   const collectionHref =
     artwork.status === "available" || artwork.status === "reserved"
       ? "/venda"
@@ -127,16 +144,24 @@ export default async function ArtworkPage({params}: ArtworkPageProps) {
 
         <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1.25fr)_minmax(22rem,0.75fr)] lg:gap-10">
           <div className="overflow-hidden rounded-4xl bg-white p-3 shadow-sm sm:p-5">
-            <div className="relative aspect-4/5 overflow-hidden rounded-[1.5rem] bg-green-secondary/50">
-              <Image
-                src={urlFor(artwork.image).width(1800).quality(90).url()}
-                alt={artwork.image.alt ?? artwork.title}
-                fill
-                priority
-                sizes="(max-width: 1023px) calc(100vw - 2rem), 60vw"
-                className="object-contain"
+            {galleryImages.length > 0 ? (
+              <ArtworkCarousel
+                key={carouselStructureKey}
+                images={carouselImages}
+                title={artwork.title}
               />
-            </div>
+            ) : (
+              <div className="relative aspect-4/5 overflow-hidden rounded-[1.5rem] bg-green-secondary/50">
+                <Image
+                  src={mainImageUrl}
+                  alt={artwork.image.alt ?? artwork.title}
+                  fill
+                  preload
+                  sizes="(max-width: 639px) calc(100vw - 3.5rem), (max-width: 1023px) calc(100vw - 5.5rem), (max-width: 1279px) 58vw, 46rem"
+                  className="object-contain"
+                />
+              </div>
+            )}
           </div>
 
           <div className="rounded-4xl bg-white p-6 sm:p-8 lg:sticky lg:top-24">
@@ -210,36 +235,6 @@ export default async function ArtworkPage({params}: ArtworkPageProps) {
             )}
           </div>
         </div>
-
-        {galleryImages.length > 0 && (
-          <section aria-labelledby="galeria-heading" className="mt-16 sm:mt-20">
-            <div className="mb-8 flex items-center gap-3 text-white">
-              <Images className="size-6 text-orange-secondary" aria-hidden="true" />
-              <h2 id="galeria-heading" className="text-3xl font-semibold tracking-tight">
-                Detalhes da obra
-              </h2>
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              {galleryImages.map((image, index) => (
-                <figure
-                  key={image._key}
-                  className="overflow-hidden rounded-4xl bg-white p-3 sm:p-4"
-                >
-                  <div className="relative aspect-4/5 overflow-hidden rounded-[1.5rem] bg-green-secondary/50">
-                    <Image
-                      src={urlFor(image).width(1400).quality(88).url()}
-                      alt={image.alt ?? `${artwork.title} — detalhe ${index + 1}`}
-                      fill
-                      sizes="(max-width: 639px) calc(100vw - 2rem), 50vw"
-                      className="object-contain"
-                    />
-                  </div>
-                </figure>
-              ))}
-            </div>
-          </section>
-        )}
       </Container>
     </article>
   )

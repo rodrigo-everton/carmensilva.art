@@ -28,6 +28,39 @@ export const ARTWORKS_QUERY = defineQuery(`
   }
 `)
 
+export const SALE_ARTWORKS_QUERY = defineQuery(`
+  *[
+    _type == "artwork" &&
+    status in ["available", "reserved"] &&
+    defined(slug.current) &&
+    defined(mainImage.asset._ref)
+  ]
+    | order(
+        defined(salePosition) desc,
+        salePosition asc,
+        year desc,
+        _updatedAt desc,
+        _id asc
+      ) {
+    "id": _id,
+    title,
+    "slug": slug.current,
+    year,
+    description,
+    technique,
+    dimensions,
+    "image": mainImage {
+      asset,
+      crop,
+      hotspot,
+      alt
+    },
+    status,
+    featured,
+    catalogNumber
+  }
+`)
+
 export const ARTWORK_QUERY = defineQuery(`
   *[
     _type == "artwork" &&

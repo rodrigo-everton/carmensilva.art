@@ -57,6 +57,7 @@ export type Artwork = {
     _key: string;
   }>;
   status: "available" | "reserved" | "sold" | "exhibition";
+  salePosition?: number;
   featured?: boolean;
   catalogNumber?: string;
 };
@@ -223,6 +224,33 @@ export type ARTWORKS_QUERY_RESULT = Array<{
 }>;
 
 // Source: src/sanity/queries/artwork.ts
+// Variable: SALE_ARTWORKS_QUERY
+// Query: *[    _type == "artwork" &&    status in ["available", "reserved"] &&    defined(slug.current) &&    defined(mainImage.asset._ref)  ]    | order(        defined(salePosition) desc,        salePosition asc,        year desc,        _updatedAt desc,        _id asc      ) {    "id": _id,    title,    "slug": slug.current,    year,    description,    technique,    dimensions,    "image": mainImage {      asset,      crop,      hotspot,      alt    },    status,    featured,    catalogNumber  }
+export type SALE_ARTWORKS_QUERY_RESULT = Array<{
+  id: string;
+  title: string;
+  slug: string;
+  year: number | null;
+  description: string | null;
+  technique: string | null;
+  dimensions: {
+    width?: number;
+    height?: number;
+    depth?: number;
+    unit?: "cm";
+  } | null;
+  image: {
+    asset: SanityImageAssetReference;
+    crop: SanityImageCrop | null;
+    hotspot: SanityImageHotspot | null;
+    alt: string | null;
+  };
+  status: "available" | "exhibition" | "reserved" | "sold";
+  featured: boolean | null;
+  catalogNumber: string | null;
+}>;
+
+// Source: src/sanity/queries/artwork.ts
 // Variable: ARTWORK_QUERY
 // Query: *[    _type == "artwork" &&    slug.current == $slug &&    defined(mainImage.asset._ref)  ][0] {    "id": _id,    _updatedAt,    title,    "slug": slug.current,    year,    description,    technique,    dimensions,    "image": mainImage {      asset,      crop,      hotspot,      alt    },    "images": images[defined(asset._ref)] {      _key,      asset,      crop,      hotspot,      alt    },    status,    featured,    catalogNumber  }
 export type ARTWORK_QUERY_RESULT = {
@@ -304,6 +332,7 @@ import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
     '\n  *[\n    _type == "artwork" &&\n    status in $statuses &&\n    defined(slug.current) &&\n    defined(mainImage.asset._ref)\n  ]\n    | order(year desc, _updatedAt desc, _id asc) {\n    "id": _id,\n    title,\n    "slug": slug.current,\n    year,\n    description,\n    technique,\n    dimensions,\n    "image": mainImage {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    status,\n    featured,\n    catalogNumber\n  }\n': ARTWORKS_QUERY_RESULT;
+    '\n  *[\n    _type == "artwork" &&\n    status in ["available", "reserved"] &&\n    defined(slug.current) &&\n    defined(mainImage.asset._ref)\n  ]\n    | order(\n        defined(salePosition) desc,\n        salePosition asc,\n        year desc,\n        _updatedAt desc,\n        _id asc\n      ) {\n    "id": _id,\n    title,\n    "slug": slug.current,\n    year,\n    description,\n    technique,\n    dimensions,\n    "image": mainImage {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    status,\n    featured,\n    catalogNumber\n  }\n': SALE_ARTWORKS_QUERY_RESULT;
     '\n  *[\n    _type == "artwork" &&\n    slug.current == $slug &&\n    defined(mainImage.asset._ref)\n  ][0] {\n    "id": _id,\n    _updatedAt,\n    title,\n    "slug": slug.current,\n    year,\n    description,\n    technique,\n    dimensions,\n    "image": mainImage {\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    "images": images[defined(asset._ref)] {\n      _key,\n      asset,\n      crop,\n      hotspot,\n      alt\n    },\n    status,\n    featured,\n    catalogNumber\n  }\n': ARTWORK_QUERY_RESULT;
     '\n  *[\n    _type == "artwork" &&\n    defined(slug.current) &&\n    defined(mainImage.asset._ref)\n  ] {\n    "slug": slug.current\n  }\n': ARTWORK_SLUGS_QUERY_RESULT;
     '\n  *[\n    _type == "artwork" &&\n    defined(slug.current) &&\n    defined(mainImage.asset._ref)\n  ]\n    | order(_updatedAt desc) {\n    "slug": slug.current,\n    _updatedAt\n  }\n': ARTWORK_SITEMAP_QUERY_RESULT;

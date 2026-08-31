@@ -4,6 +4,7 @@ import { ArrowUpRight, Clock3, Mail, MessageCircle } from "lucide-react"
 
 import Container from "@/components/ui/Container"
 import { Button } from "@/components/ui/Button"
+import sociaLinks from "@/app/socialLinks.json";
 
 export const metadata: Metadata = {
   title: "Contato",
@@ -17,9 +18,8 @@ const contactLinks = {
 }
 
 const socialLinks = [
-  { label: "Instagram", href: "https://www.instagram.com/", icon: "/instagram_icon.svg" },
-  { label: "Facebook", href: "https://www.facebook.com/", icon: "/facebook_icon.svg" },
-  { label: "LinkedIn", href: "https://www.linkedin.com/", icon: "/linkedin_icon.svg" },
+  { label: "Instagram", href: sociaLinks.instagram, icon: "/instagram_icon.svg" },
+  { label: "Facebook", href: sociaLinks.facebook, icon: "/facebook_icon.svg" },
 ]
 //TODO: atualizar links
 export default function ContatoPage() {

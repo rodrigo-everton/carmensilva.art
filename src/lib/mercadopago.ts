@@ -9,6 +9,7 @@ import {
   MPValidationError,
   Payment,
   Preference,
+  SignatureFailureReason,
   WebhookSignatureValidator,
 } from "mercadopago"
 
@@ -35,6 +36,8 @@ export class MercadoPagoConfigurationError extends Error {
 let configuredAccessToken: string | null = null
 let preferenceClient: Preference | null = null
 let paymentClient: Payment | null = null
+
+const WEBHOOK_SIGNATURE_TOLERANCE_MS = 5 * 60 * 1000
 
 function getClients() {
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN?.trim()
@@ -198,8 +201,53 @@ export function validateMercadoPagoWebhookSignature(input: {
   WebhookSignatureValidator.validate({
     ...input,
     secret: getMercadoPagoWebhookSecret(),
-    toleranceSeconds: 300,
   })
+
+  // Mercado Pago currently sends milliseconds, while older notifications and
+  // some SDK examples use seconds. The SDK's optional tolerance assumes
+  // seconds only, so validate the signed raw value first and normalize it here.
+  let timestamp: string | undefined
+
+  for (const part of input.xSignature?.split(",") ?? []) {
+    const separatorIndex = part.indexOf("=")
+
+    if (separatorIndex === -1) continue
+
+    const key = part.slice(0, separatorIndex).trim().toLowerCase()
+    const value = part.slice(separatorIndex + 1).trim()
+
+    if (key === "ts" && value) timestamp = value
+  }
+
+  if (!timestamp) {
+    throw new InvalidWebhookSignatureError(
+      SignatureFailureReason.MissingTimestamp,
+      input.xRequestId?.trim() || undefined,
+    )
+  }
+
+  const rawTimestamp = Number(timestamp)
+
+  if (!Number.isSafeInteger(rawTimestamp) || rawTimestamp <= 0) {
+    throw new InvalidWebhookSignatureError(
+      SignatureFailureReason.MalformedSignatureHeader,
+      input.xRequestId?.trim() || undefined,
+      timestamp,
+    )
+  }
+
+  const timestampMs =
+    rawTimestamp >= 1_000_000_000_000
+      ? rawTimestamp
+      : rawTimestamp * 1000
+
+  if (Math.abs(Date.now() - timestampMs) > WEBHOOK_SIGNATURE_TOLERANCE_MS) {
+    throw new InvalidWebhookSignatureError(
+      SignatureFailureReason.TimestampOutOfTolerance,
+      input.xRequestId?.trim() || undefined,
+      timestamp,
+    )
+  }
 }
 
 export {InvalidWebhookSignatureError}

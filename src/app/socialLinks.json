@@ -1,5 +1,6 @@
 {
-    "whatsapp": "556191113665",
+    "whatsapp": "https://api.whatsapp.com/send/?phone=556191113665&text=Ol%C3%A1+Carmem+Silva%2C+venho+do+seu+website+de+galeria+de+arte+e+gostaria+de+conversar.&type=phone_number&app_absent=0",
     "instagram": "https://instagram.com/carmemsilva.arte",
-    "facebook": "https://www.facebook.com/share/1Q2hzsE5o6/"
+    "facebook": "https://www.facebook.com/share/1Q2hzsE5o6/",
+    "email": "charmemc@gmail.com"
 }

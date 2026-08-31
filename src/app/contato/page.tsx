@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 }
 
 const contactLinks = {
-  email: "mailto:contato@carmensilva.art",
-  whatsapp: "https://wa.me/",
+  email: sociaLinks.email,
+  whatsapp: sociaLinks.whatsapp,
 }
 
 const socialLinks = [
@@ -82,7 +82,7 @@ export default function ContatoPage() {
             <div>
               <p className="mb-2 text-sm font-semibold uppercase tracking-[0.25em] text-green">Propostas e projetos</p>
               <h2 className="text-3xl font-semibold">Envie um e-mail</h2>
-              <p className="mt-3 break-all text-sm sm:text-base">contato@carmensilva.art</p>
+              <p className="mt-3 break-all text-sm sm:text-base">{sociaLinks.email}</p>
             </div>
           </a>
         </section>

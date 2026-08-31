@@ -5,7 +5,7 @@ import { Button } from "../ui/Button"
 import Image from "next/image";
 import socialLinks from "@/app/socialLinks.json";
 
-const linkWhatsapp = "https://api.whatsapp.com/send/?phone=" + socialLinks.whatsapp + "&text=Ol%C3%A1+Carmem+Silva%2C+venho+do+seu+website+de+galeria+de+arte+e+gostaria+de+conversar.&type=phone_number&app_absent=0";
+const linkWhatsapp = socialLinks.whatsapp;
 export default function Footer() {
   return (
     <footer className="mt-20 border-t border-white bg-red text-white">

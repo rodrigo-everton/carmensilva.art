@@ -36,7 +36,7 @@ export default function Header() {
   }, [isMenuOpen]);
 
   return (
-    <header className="bg-red text-white font-semibold border-b">
+    <header className="relative z-20 bg-red text-white font-semibold border-b">
       <Container>
         <div className="flex h-20 items-center justify-between">
           <Link href="/#" className="text-xl font-semibold">

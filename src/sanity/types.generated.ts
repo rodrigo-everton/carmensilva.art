@@ -335,6 +335,15 @@ export type ARTWORKS_BY_IDS_QUERY_RESULT = Array<{
 }>;
 
 // Source: src/sanity/queries/artwork.ts
+// Variable: ADMIN_SALE_ARTWORKS_QUERY
+// Query: *[_type == "artwork" && _id in $ids] {    "id": _id,    title,    "slug": slug.current  }
+export type ADMIN_SALE_ARTWORKS_QUERY_RESULT = Array<{
+  id: string;
+  title: string;
+  slug: string;
+}>;
+
+// Source: src/sanity/queries/artwork.ts
 // Variable: ARTWORK_COMMERCE_QUERY
 // Query: *[    _type == "artwork" &&    _id in $ids  ] {    _id,    _rev,    status,    "slug": slug.current,    commerce {      saleId,      paymentPreferenceId,      providerPaymentId,      reservationExpiresAt,      updatedAt    }  }
 export type ARTWORK_COMMERCE_QUERY_RESULT = Array<{
@@ -362,6 +371,7 @@ declare module "@sanity/client" {
     '\n  *[\n    _type == "artwork" &&\n    defined(slug.current) &&\n    defined(mainImage.asset._ref)\n  ]\n    | order(_updatedAt desc) {\n    "slug": slug.current,\n    _updatedAt\n  }\n': ARTWORK_SITEMAP_QUERY_RESULT;
     '\n  *[_type == "artwork" && _id == $id && status == "available"][0] {\n    "id": _id,\n    title,\n    status\n  }\n': ARTWORK_INTEREST_QUERY_RESULT;
     '\n  *[_type == "artwork" && _id in $ids] {\n    "id": _id,\n    title,\n    year,\n    technique,\n    dimensions,\n    status,\n    catalogNumber\n  }\n': ARTWORKS_BY_IDS_QUERY_RESULT;
+    '\n  *[_type == "artwork" && _id in $ids] {\n    "id": _id,\n    title,\n    "slug": slug.current\n  }\n': ADMIN_SALE_ARTWORKS_QUERY_RESULT;
     '\n  *[\n    _type == "artwork" &&\n    _id in $ids\n  ] {\n    _id,\n    _rev,\n    status,\n    "slug": slug.current,\n    commerce {\n      saleId,\n      paymentPreferenceId,\n      providerPaymentId,\n      reservationExpiresAt,\n      updatedAt\n    }\n  }\n': ARTWORK_COMMERCE_QUERY_RESULT;
   }
 }

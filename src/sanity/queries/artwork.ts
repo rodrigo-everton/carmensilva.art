@@ -136,6 +136,14 @@ export const ARTWORKS_BY_IDS_QUERY = defineQuery(`
   }
 `)
 
+export const ADMIN_SALE_ARTWORKS_QUERY = defineQuery(`
+  *[_type == "artwork" && _id in $ids] {
+    "id": _id,
+    title,
+    "slug": slug.current
+  }
+`)
+
 export const ARTWORK_COMMERCE_QUERY = defineQuery(`
   *[
     _type == "artwork" &&

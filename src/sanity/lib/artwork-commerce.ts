@@ -146,7 +146,6 @@ function getNextDocumentState(
     return {
       status: "reserved",
       commerce: {
-        _type: "object",
         saleId: input.saleId,
         paymentPreferenceId: input.paymentPreferenceId,
         reservationExpiresAt: expiresAt,
@@ -164,15 +163,9 @@ function getNextDocumentState(
       }
 
       if (
-        commerce?.providerPaymentId &&
-        commerce.providerPaymentId !== input.providerPaymentId
+        commerce.providerPaymentId === input.providerPaymentId &&
+        sameReservation
       ) {
-        throw new ArtworkCommerceConflictError(
-          "A obra já está vinculada a outro pagamento.",
-        )
-      }
-
-      if (commerce.providerPaymentId === input.providerPaymentId) {
         return null
       }
     } else if (status === "reserved") {
@@ -202,7 +195,6 @@ function getNextDocumentState(
     return {
       status: "sold",
       commerce: {
-        _type: "object",
         saleId: input.saleId,
         paymentPreferenceId: input.paymentPreferenceId,
         providerPaymentId: input.providerPaymentId,

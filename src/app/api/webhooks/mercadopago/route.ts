@@ -11,11 +11,8 @@ import {
   validateMercadoPagoWebhookSignature,
 } from "@/lib/mercadopago"
 import {numberToCents} from "@/lib/money"
+import {loadAndProcessMercadoPagoArtworkSyncJobs} from "@/lib/payment-artwork-sync"
 import {createSupabaseAdminClient} from "@/lib/supabase-admin"
-import {
-  markArtworkAsSold,
-  releaseArtworkAfterRefund,
-} from "@/sanity/lib/artwork-commerce"
 import type {PaymentStatus} from "@/types/payment"
 
 export const runtime = "nodejs"
@@ -76,6 +73,13 @@ function metadataString(metadata: unknown, key: string) {
 
 function ignoredResponse(reason: string) {
   return NextResponse.json({received: true, processed: false, reason})
+}
+
+function reconciliationConflict(reason: string) {
+  return NextResponse.json(
+    {received: true, processed: false, reason},
+    {status: 409},
+  )
 }
 
 export async function POST(request: NextRequest) {
@@ -212,7 +216,7 @@ export async function POST(request: NextRequest) {
       requestId,
       preferenceId: preference.id,
     })
-    return ignoredResponse("mismatched_preference_environment")
+    return reconciliationConflict("mismatched_preference_environment")
   }
 
   if (collectorId !== accountIdentity.sellerId) {
@@ -221,19 +225,18 @@ export async function POST(request: NextRequest) {
       requestId,
       preferenceId: preference.id,
     })
-    return ignoredResponse("mismatched_payment_collector")
+    return reconciliationConflict("mismatched_payment_collector")
   }
 
-  if (
-    accountIdentity.environment === "production" &&
-    payment.live_mode !== true
-  ) {
-    console.warn("Pagamento de teste rejeitado no ambiente de produção.", {
+  const expectedLiveMode = accountIdentity.environment === "production"
+
+  if (payment.live_mode !== expectedLiveMode) {
+    console.warn("O modo do pagamento diverge do ambiente configurado.", {
       paymentId: dataId,
       requestId,
       preferenceId: preference.id,
     })
-    return ignoredResponse("test_payment_in_production")
+    return reconciliationConflict("mismatched_payment_environment")
   }
 
   const {data: saleData, error: saleError} = await supabase
@@ -265,7 +268,7 @@ export async function POST(request: NextRequest) {
       paymentId: dataId,
       requestId,
     })
-    return ignoredResponse("mismatched_preference_metadata")
+    return reconciliationConflict("mismatched_preference_metadata")
   }
 
   if (metadataConversationId !== preference.conversation_id) {
@@ -273,7 +276,7 @@ export async function POST(request: NextRequest) {
       paymentId: dataId,
       requestId,
     })
-    return ignoredResponse("mismatched_conversation_metadata")
+    return reconciliationConflict("mismatched_conversation_metadata")
   }
 
   if (metadataArtworkId !== sale.artwork_id) {
@@ -281,7 +284,7 @@ export async function POST(request: NextRequest) {
       paymentId: dataId,
       requestId,
     })
-    return ignoredResponse("mismatched_artwork_metadata")
+    return reconciliationConflict("mismatched_artwork_metadata")
   }
 
   if (metadataCreatedBy !== preference.created_by) {
@@ -289,7 +292,7 @@ export async function POST(request: NextRequest) {
       paymentId: dataId,
       requestId,
     })
-    return ignoredResponse("mismatched_creator_metadata")
+    return reconciliationConflict("mismatched_creator_metadata")
   }
 
   const amountCents = numberToCents(payment.transaction_amount)
@@ -303,7 +306,7 @@ export async function POST(request: NextRequest) {
       requestId,
       preferenceId: preference.id,
     })
-    return ignoredResponse("mismatched_amount_or_currency")
+    return reconciliationConflict("mismatched_amount_or_currency")
   }
 
   if (payment.id === undefined || payment.id === null) {
@@ -345,86 +348,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({error: "Falha ao registrar o pagamento."}, {status: 500})
   }
 
-  const [finalSaleResult, finalPreferenceResult, approvedPaymentResult] =
-    await Promise.all([
-      supabase
-        .from("sales")
-        .select("id,artwork_id,sale_status")
-        .eq("id", preference.sale_id)
-        .single(),
-      supabase
-        .from("payment_preferences")
-        .select("id,status")
-        .eq("id", preference.id)
-        .single(),
-      supabase
-        .from("payments")
-        .select("provider_payment_id")
-        .eq("sale_id", preference.sale_id)
-        .eq("status", "approved")
-        .not("provider_payment_id", "is", null)
-        .order("paid_at", {ascending: true, nullsFirst: false})
-        .limit(1)
-        .maybeSingle(),
-    ])
-
-  if (
-    finalSaleResult.error ||
-    finalPreferenceResult.error ||
-    approvedPaymentResult.error ||
-    !finalSaleResult.data ||
-    !finalPreferenceResult.data
-  ) {
-    console.error("O pagamento foi salvo, mas o estado final não pôde ser lido.", {
-      paymentId: dataId,
-      requestId,
-      saleError: finalSaleResult.error?.message,
-      preferenceError: finalPreferenceResult.error?.message,
-      approvedPaymentError: approvedPaymentResult.error?.message,
-    })
-    return NextResponse.json(
-      {error: "Falha ao confirmar o estado final do pagamento."},
-      {status: 500},
-    )
-  }
-
-  const finalSale = finalSaleResult.data as SaleRow
-  const finalPreference = finalPreferenceResult.data as {
-    id: string
-    status: string
-  }
-
   try {
-    if (
-      ["paid", "preparing_delivery", "shipped", "delivered", "completed"].includes(
-        finalSale.sale_status,
-      )
-    ) {
-      const approvedProviderPaymentId =
-        approvedPaymentResult.data?.provider_payment_id
-
-      if (!approvedProviderPaymentId) {
-        throw new Error(
-          "A venda está paga, mas o pagamento aprovado não foi localizado.",
-        )
-      }
-
-      await markArtworkAsSold({
-        artworkId: finalSale.artwork_id,
-        saleId: finalSale.id,
-        paymentPreferenceId: finalPreference.id,
-        providerPaymentId: String(approvedProviderPaymentId),
-      })
-    } else if (
-      finalSale.sale_status === "cancelled" &&
-      finalPreference.status === "refunded"
-    ) {
-      await releaseArtworkAfterRefund({
-        artworkId: finalSale.artwork_id,
-        saleId: finalSale.id,
-        paymentPreferenceId: finalPreference.id,
-      })
-    }
+    await loadAndProcessMercadoPagoArtworkSyncJobs(supabase, {
+      conversationId: preference.conversation_id,
+    })
   } catch (error) {
     console.error("Pagamento salvo, mas a obra não foi sincronizada no Sanity.", {
       paymentId: dataId,

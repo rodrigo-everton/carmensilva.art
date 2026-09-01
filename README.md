@@ -49,7 +49,9 @@ Antes do deploy:
    `SUPABASE_SECRET_KEY` são credenciais exclusivas do servidor. Defina também
    `MERCADOPAGO_ENVIRONMENT` (`test` ou `production`), fixe a conta com
    `MERCADOPAGO_SELLER_ID`, use `MERCADOPAGO_SITE_ID=MLB` e configure a validade
-   em horas com `MERCADOPAGO_PREFERENCE_TTL_HOURS` (padrão: `24`).
+   em horas com `MERCADOPAGO_PREFERENCE_TTL_HOURS` (padrão: `24`). Defina ainda
+   um `CRON_SECRET` aleatório com pelo menos 16 caracteres; a Vercel o envia no
+   cabeçalho de autorização da manutenção agendada.
 3. Crie um token Sanity com permissão **Editor** e salve-o somente no servidor
    como `SANITY_API_WRITE_TOKEN`. Ele mantém a obra como `reserved` durante a
    cobrança, `sold` após a aprovação e `available` após expiração ou reembolso.
@@ -62,6 +64,13 @@ Antes do deploy:
 
 A integração usa diretamente o `init_point` devolvido pela preferência; não é
 necessária uma Public Key do Mercado Pago no navegador.
+
+O link deixa de aceitar pagamentos no horário registrado em `expires_at`. Além
+da reconciliação feita ao criar uma cobrança e ao receber um webhook, o endpoint
+interno `/api/internal/payment-maintenance` roda diariamente pelo `vercel.json`
+para repetir sincronizações interrompidas entre Supabase e Sanity. Em um plano
+Vercel que aceite maior frequência, o agendamento pode ser reduzido sem alterar
+o endpoint; a expiração no próprio Mercado Pago não depende desse cron.
 
 O Client ID, o Client Secret e o número da aplicação são identificadores
 opcionais neste fluxo direto. O segredo exigido pelo webhook é a **assinatura

@@ -335,14 +335,29 @@ export async function createMercadoPagoPreference({
     },
   })
 
-  const confirmedExpiration = response.expiration_date_to
+  if (!response.id) {
+    throw new Error("O Mercado Pago não devolveu a preferência completa.")
+  }
+
+  const responseExpiration = response.expiration_date_to
     ? Date.parse(response.expiration_date_to)
+    : Number.NaN
+  const requiresCanonicalRead =
+    !response.init_point ||
+    response.expires !== true ||
+    !Number.isFinite(responseExpiration) ||
+    Math.abs(responseExpiration - expirationTimestamp) > 1_000
+  const canonicalResponse = requiresCanonicalRead
+    ? await preferences.get({preferenceId: response.id})
+    : response
+  const confirmedExpiration = canonicalResponse.expiration_date_to
+    ? Date.parse(canonicalResponse.expiration_date_to)
     : Number.NaN
 
   if (
-    !response.id ||
-    !response.init_point ||
-    response.expires !== true ||
+    canonicalResponse.id !== response.id ||
+    !canonicalResponse.init_point ||
+    canonicalResponse.expires !== true ||
     !Number.isFinite(confirmedExpiration) ||
     Math.abs(confirmedExpiration - expirationTimestamp) > 1_000
   ) {
@@ -350,8 +365,8 @@ export async function createMercadoPagoPreference({
   }
 
   return {
-    id: response.id,
-    checkoutUrl: response.init_point,
+    id: canonicalResponse.id,
+    checkoutUrl: canonicalResponse.init_point,
     expiresAt: new Date(confirmedExpiration).toISOString(),
   }
 }

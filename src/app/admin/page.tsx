@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import {
   ArrowRight,
-  ClipboardList,
   LayoutDashboard,
   MessageSquareText,
   Palette,
@@ -9,8 +8,13 @@ import {
   UsersRound,
 } from "lucide-react"
 import Link from "next/link"
+import { Suspense } from "react"
 
-import { AdminEmptyState, AdminPageHeader } from "@/components/admin/AdminPage"
+import { AdminPageHeader } from "@/components/admin/AdminPage"
+import {
+  RecentActivity,
+  RecentActivityLoading,
+} from "@/components/admin/RecentActivity"
 import { requireAdmin } from "@/lib/auth"
 
 export const metadata: Metadata = {
@@ -106,19 +110,9 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-red/10 bg-white shadow-sm">
-        <div className="border-b border-red/10 px-5 py-4 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-green-hover">
-            Resumo
-          </p>
-          <h2 className="mt-1 text-xl font-semibold text-red">Atividade recente</h2>
-        </div>
-        <AdminEmptyState
-          icon={ClipboardList}
-          title="Nenhuma atividade carregada"
-          description="Os registros dos módulos aparecerão aqui quando uma fonte de dados for conectada ao painel."
-        />
-      </section>
+      <Suspense fallback={<RecentActivityLoading />}>
+        <RecentActivity />
+      </Suspense>
     </div>
   )
 }

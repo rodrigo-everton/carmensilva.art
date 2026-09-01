@@ -1,6 +1,7 @@
 import type {Metadata} from "next"
 import {
   AlertCircle,
+  ArrowLeft,
   Inbox,
   MessageSquareText,
   MessagesSquare,
@@ -18,6 +19,7 @@ import {
   type ConversationMessageRow,
   type ConversationRow,
 } from "@/lib/conversations"
+import {loadCustomerNames} from "@/lib/customer-names"
 import {sanityFetch} from "@/sanity/lib/live"
 import {createClient} from "@/sanity/lib/supabase/server"
 import {ARTWORKS_BY_IDS_QUERY} from "@/sanity/queries/artwork"
@@ -33,11 +35,6 @@ type AdminMensagemPageProps = {
     conversa?: string | string[]
     erro?: string | string[]
   }>
-}
-
-type CustomerProfile = {
-  id: string
-  full_name: string | null
 }
 
 type PaymentPreferenceRow = {
@@ -130,18 +127,17 @@ export default async function AdminMensagemPage({
     .order("updated_at", {ascending: false})
 
   const conversations = (conversationData ?? []) as ConversationRow[]
+  const selectedConversation =
+    conversations.find(({id}) => id === requestedConversationId) ?? null
   const activeConversation =
-    conversations.find(({id}) => id === requestedConversationId) ??
-    conversations[0] ??
-    null
+    selectedConversation ?? conversations[0] ?? null
+  const isConversationSelected = selectedConversation !== null
 
   const customerIds = [...new Set(conversations.map(({customer_id}) => customer_id))]
   const artworkIds = [...new Set(conversations.map(({artwork_id}) => artwork_id))]
 
-  const [{data: profileData}, artworksResult] = await Promise.all([
-    customerIds.length
-      ? supabase.from("profiles").select("id,full_name").in("id", customerIds)
-      : Promise.resolve({data: []}),
+  const [customerNamesById, artworksResult] = await Promise.all([
+    loadCustomerNames(customerIds),
     artworkIds.length
       ? sanityFetch({
           query: ARTWORKS_BY_IDS_QUERY,
@@ -151,12 +147,6 @@ export default async function AdminMensagemPage({
       : Promise.resolve({data: []}),
   ])
 
-  const profilesById = new Map(
-    ((profileData ?? []) as CustomerProfile[]).map((profile) => [
-      profile.id,
-      profile,
-    ]),
-  )
   const artworksById = new Map(
     artworksResult.data.map((artwork) => [artwork.id, artwork]),
   )
@@ -193,9 +183,9 @@ export default async function AdminMensagemPage({
   const activeArtwork = activeConversation
     ? artworksById.get(activeConversation.artwork_id)
     : null
-  const activeCustomer = activeConversation
-    ? profilesById.get(activeConversation.customer_id)
-    : null
+  const activeCustomerName = activeConversation
+    ? customerNamesById.get(activeConversation.customer_id) ?? "Cliente"
+    : "Cliente"
 
   return (
     <div className="space-y-6">
@@ -217,10 +207,14 @@ export default async function AdminMensagemPage({
       )}
 
       <section
-        aria-labelledby="mensagens-heading"
+        aria-label="Caixa de mensagens"
         className="grid min-h-[34rem] overflow-hidden rounded-2xl border border-red/10 bg-white shadow-sm md:grid-cols-[minmax(15rem,0.75fr)_minmax(0,1.25fr)]"
       >
-        <aside className="border-b border-red/10 md:border-b-0 md:border-r">
+        <aside
+          className={`border-b border-red/10 md:block md:border-b-0 md:border-r ${
+            isConversationSelected ? "hidden" : ""
+          }`}
+        >
           <div className="flex items-end justify-between gap-4 border-b border-red/10 px-5 py-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-green-hover">
@@ -253,23 +247,33 @@ export default async function AdminMensagemPage({
               </p>
             </div>
           ) : (
-            <nav aria-label="Conversas com clientes" className="divide-y divide-red/10">
+            <nav
+              aria-label="Conversas com clientes"
+              className="max-h-[27.25rem] divide-y divide-red/10 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+            >
               {conversations.map((conversation) => {
-                const customer = profilesById.get(conversation.customer_id)
+                const customerName =
+                  customerNamesById.get(conversation.customer_id) ?? "Cliente"
                 const artwork = artworksById.get(conversation.artwork_id)
-                const isActive = conversation.id === activeConversation?.id
+                const isSelected = conversation.id === selectedConversation?.id
+                const isDesktopFallback =
+                  !selectedConversation && conversation.id === activeConversation?.id
 
                 return (
                   <Link
                     key={conversation.id}
                     href={`/admin/mensagem?conversa=${encodeURIComponent(conversation.id)}`}
-                    aria-current={isActive ? "page" : undefined}
+                    aria-current={isSelected ? "page" : undefined}
                     className={`block px-5 py-5 transition-colors ${
-                      isActive ? "bg-green-secondary/60" : "hover:bg-green-secondary/20"
+                      isSelected
+                        ? "bg-green-secondary/60"
+                        : isDesktopFallback
+                          ? "hover:bg-green-secondary/20 md:bg-green-secondary/60 md:hover:bg-green-secondary/60"
+                          : "hover:bg-green-secondary/20"
                     }`}
                   >
                     <p className="truncate font-semibold text-red">
-                      {customer?.full_name ?? "Cliente"}
+                      {customerName}
                     </p>
                     <p className="mt-1 truncate text-sm text-black/60">
                       {artwork?.title ?? "Obra do acervo"}
@@ -285,16 +289,30 @@ export default async function AdminMensagemPage({
         </aside>
 
         {activeConversation ? (
-          <div className="flex min-h-[34rem] flex-col bg-green-secondary/15">
+          <div
+            className={`min-h-[34rem] flex-col bg-green-secondary/15 md:flex ${
+              isConversationSelected ? "flex" : "hidden"
+            }`}
+          >
             <header className="border-b border-red/10 bg-white/90 px-5 py-5 sm:px-7">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange">
-                    {activeArtwork?.title ?? "Obra do acervo"}
-                  </p>
-                  <h3 className="mt-1 text-2xl font-semibold text-red">
-                    {activeCustomer?.full_name ?? "Cliente"}
-                  </h3>
+                <div className="flex min-w-0 items-start gap-3">
+                  <Link
+                    href="/admin/mensagem"
+                    replace
+                    aria-label="Voltar para a lista de conversas"
+                    className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-green-secondary/65 text-red transition-colors hover:bg-green-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange md:hidden"
+                  >
+                    <ArrowLeft className="size-5" aria-hidden="true" />
+                  </Link>
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-orange">
+                      {activeArtwork?.title ?? "Obra do acervo"}
+                    </p>
+                    <h2 className="mt-1 truncate text-2xl font-semibold text-red">
+                      {activeCustomerName}
+                    </h2>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <GeneratePaymentButton
@@ -359,7 +377,7 @@ export default async function AdminMensagemPage({
                           isArtist ? "text-red-secondary" : "text-black/45"
                         }`}
                       >
-                        {isArtist ? "Você" : activeCustomer?.full_name ?? "Cliente"} ·{" "}
+                        {isArtist ? "Você" : activeCustomerName} ·{" "}
                         {formatDate(message.created_at)}
                       </p>
                     </article>
@@ -371,11 +389,13 @@ export default async function AdminMensagemPage({
             <MessageComposer
               action={sendAdminMessage}
               conversationId={activeConversation.id}
-              placeholder={`Responder a ${activeCustomer?.full_name ?? "cliente"}...`}
+              placeholder={`Responder a ${
+                activeCustomerName === "Cliente" ? "cliente" : activeCustomerName
+              }...`}
             />
           </div>
         ) : (
-          <div className="flex min-h-80 flex-col items-center justify-center bg-green-secondary/20 px-6 text-center">
+          <div className="hidden min-h-80 flex-col items-center justify-center bg-green-secondary/20 px-6 text-center md:flex">
             <MessagesSquare className="size-9 text-red/40" aria-hidden="true" />
             <h3 className="mt-4 text-xl font-semibold text-red">
               Visualização da conversa

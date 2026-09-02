@@ -6,22 +6,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase-admin"
 import { sanityFetch } from "@/sanity/lib/live"
 import { ADMIN_ACTIVITY_ARTWORKS_QUERY } from "@/sanity/queries/artwork"
 import type { ADMIN_ACTIVITY_ARTWORKS_QUERY_RESULT } from "@/sanity/types.generated"
-import type { SaleStatus } from "@/types/sale"
 
 export const ADMIN_RECENT_ACTIVITY_LIMIT = 8
 const MESSAGE_PAGE_SIZE = 50
 const MAX_MESSAGE_PAGES = 3
-
-const SALE_STATUSES: readonly SaleStatus[] = [
-  "negotiating",
-  "awaiting_payment",
-  "paid",
-  "preparing_delivery",
-  "shipped",
-  "delivered",
-  "completed",
-  "cancelled",
-]
 
 type MessageConversationRow = {
   customer_id: string
@@ -50,7 +38,6 @@ type SaleRow = {
   customer_id: string
   negotiated_price: number | string
   currency: string
-  sale_status: string
   created_at: string
   updated_at: string
 }
@@ -82,7 +69,6 @@ export type AdminMessageActivity = AdminActivityBase & {
 export type AdminSaleActivity = AdminActivityBase & {
   kind: "sale"
   artworkTitle: string | null
-  saleStatus: SaleStatus | "unknown"
   amount: number | null
   currency: string | null
   isNew: boolean
@@ -104,12 +90,6 @@ export type AdminRecentActivityResult = {
 
 function singleRelation<T>(value: T | T[] | null | undefined) {
   return Array.isArray(value) ? (value[0] ?? null) : (value ?? null)
-}
-
-function normalizeSaleStatus(value: string) {
-  return (SALE_STATUSES as readonly string[]).includes(value)
-    ? (value as SaleStatus)
-    : "unknown"
 }
 
 function finitePositiveNumber(value: unknown) {
@@ -216,7 +196,7 @@ async function listRecentSales() {
   const { data, error } = await supabase
     .from("sales")
     .select(
-      "id,conversation_id,artwork_id,customer_id,negotiated_price,currency,sale_status,created_at,updated_at",
+      "id,conversation_id,artwork_id,customer_id,negotiated_price,currency,created_at,updated_at",
     )
     .order("updated_at", { ascending: false })
     .order("id", { ascending: true })
@@ -359,7 +339,6 @@ export async function loadAdminRecentActivity(): Promise<AdminRecentActivityResu
         artworkTitle:
           artworksById.get(sale.artwork_id)?.title?.trim() || null,
         href: "/admin/venda",
-        saleStatus: normalizeSaleStatus(sale.sale_status),
         amount: finitePositiveNumber(sale.negotiated_price),
         currency: normalizedCurrency(sale.currency),
         isNew: sale.created_at === sale.updated_at,

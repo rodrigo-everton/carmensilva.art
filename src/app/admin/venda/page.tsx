@@ -274,7 +274,7 @@ export default async function AdminVendaPage() {
               role="region"
               aria-label="Tabela de vendas registradas"
               tabIndex={0}
-              className="overflow-x-auto overscroll-x-contain focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-orange"
+              className="max-h-[28.75rem] overflow-auto overscroll-contain focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-orange [scrollbar-gutter:stable]"
             >
               <table
                 aria-describedby={tableDescriptionIds || undefined}
@@ -283,7 +283,7 @@ export default async function AdminVendaPage() {
                 <caption className="sr-only">
                   Vendas registradas, clientes, pagamentos, entregas e totais
                 </caption>
-                <thead className="bg-red-secondary/30 text-xs uppercase tracking-[0.14em] text-red">
+                <thead className="sticky top-0 z-10 bg-[#f8f0f2] text-xs uppercase tracking-[0.14em] text-red">
                   <tr>
                     <th scope="col" className="px-6 py-3 font-semibold">
                       Venda

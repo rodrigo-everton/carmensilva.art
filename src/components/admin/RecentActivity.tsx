@@ -14,7 +14,6 @@ import {
   loadAdminRecentActivity,
   type AdminActivity,
   type AdminActivityWarning,
-  type AdminSaleActivity,
 } from "@/lib/admin-activity"
 
 const activityDateFormatter = new Intl.DateTimeFormat("pt-BR", {
@@ -34,18 +33,6 @@ const warningListFormatter = new Intl.ListFormat("pt-BR", {
   style: "long",
   type: "conjunction",
 })
-
-const saleStatusLabels: Record<AdminSaleActivity["saleStatus"], string> = {
-  negotiating: "Em negociação",
-  awaiting_payment: "Aguardando pagamento",
-  paid: "Paga",
-  preparing_delivery: "Preparando entrega",
-  shipped: "Enviada",
-  delivered: "Entregue",
-  completed: "Concluída",
-  cancelled: "Cancelada",
-  unknown: "Indisponível",
-}
 
 type ActivityPresentation = {
   title: string
@@ -93,7 +80,6 @@ function activityPresentation(
       const details = [
         activity.artworkTitle ?? "Obra do acervo",
         activity.customerName ?? "Cliente não identificado",
-        `Status atual: ${saleStatusLabels[activity.saleStatus]}`,
         total,
       ].filter(Boolean)
 
@@ -107,9 +93,9 @@ function activityPresentation(
     case "customer":
       return {
         title: activity.customerName
-          ? `${activity.customerName} se cadastrou`
-          : "Novo cliente cadastrado",
-        description: "Cadastro concluído no site.",
+          ? `${activity.customerName}: perfil de cliente criado`
+          : "Perfil de cliente criado",
+        description: "Perfil disponível na área administrativa.",
         icon: UserPlus,
         iconClassName: "bg-green-secondary text-green-hover",
       }
@@ -253,8 +239,9 @@ export async function RecentActivity() {
             className="mt-0.5 size-4 shrink-0 text-red"
             aria-hidden="true"
           />
-          Parte dos dados da atividade recente está indisponível. Não foi
-          possível carregar integralmente {warningDescription}.
+          A atividade recente está parcial. Algumas movimentações ou detalhes
+          podem não aparecer porque não foi possível consultar integralmente{" "}
+          {warningDescription}.
         </div>
       )}
 
@@ -274,7 +261,7 @@ export async function RecentActivity() {
           </h3>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-black/65">
             {warnings.length > 0
-              ? "Tente novamente para consultar as demais fontes do painel."
+              ? "Atualize a página para consultar as demais fontes do painel."
               : "Novos cadastros, mensagens e vendas aparecerão aqui."}
           </p>
         </div>
@@ -283,7 +270,9 @@ export async function RecentActivity() {
           aria-describedby={
             warnings.length > 0 ? "activity-data-warning" : undefined
           }
-          className="divide-y divide-red/10"
+          aria-label="Lista de atividades recentes"
+          tabIndex={0}
+          className="max-h-[26rem] divide-y divide-red/10 overflow-y-auto overscroll-contain focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-orange sm:max-h-[21rem] [scrollbar-gutter:stable]"
         >
           {activities.map((activity) => {
             const presentation = activityPresentation(activity)

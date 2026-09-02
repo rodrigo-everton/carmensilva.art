@@ -1,6 +1,5 @@
 import Container from "@/components/ui/Container"
 import { navItems } from "./navItems"
-import { Link } from "lucide-react"
 import { Button } from "../ui/Button"
 import Image from "next/image";
 import socialLinks from "@/app/socialLinks.json";
@@ -12,7 +11,10 @@ export default function Footer() {
       <Container>
         <div className="flex flex-col md:flex-row md:items-start md:justify-between">
           <p className="max-w-sm pt-8 md:border-r pr-8 mb-8">
-            descrição da Carmem Silva
+            Artista plástica e visual maranhense radicada em Brasília, Carmem
+            Silva transforma memórias, cores e texturas em uma linguagem
+            própria, construída desde as experiências com argila e pigmentos
+            naturais às margens do Rio Mearim.
           </p>
           <div className="pt-8 flex flex-col gap-6 font-bold mb-8">
             Navegação

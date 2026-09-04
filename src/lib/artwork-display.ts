@@ -1,5 +1,7 @@
 import type {ArtworkStatus} from "@/types/artwork"
 
+export const artworkArtistName = "Carmem Silva"
+
 type ArtworkDimensions = {
   width?: number
   height?: number

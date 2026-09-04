@@ -41,7 +41,7 @@ export default async function Exposicao() {
               Acervo da artista
             </p>
             <h1 className="text-5xl font-semibold tracking-[-0.035em] text-white sm:text-6xl lg:text-7xl">
-              Exposição
+              Acervo
             </h1>
           </div>
 

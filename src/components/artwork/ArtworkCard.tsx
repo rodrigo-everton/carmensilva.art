@@ -4,6 +4,7 @@ import {ArrowUpRight} from "lucide-react"
 
 import { Artwork } from "@/types/artwork"
 import {
+  artworkArtistName,
   artworkStatusDetails,
   formatArtworkDimensions,
 } from "@/lib/artwork-display"
@@ -32,7 +33,7 @@ export default function ArtworkCard({
         href={artworkHref}
         prefetch={false}
         aria-label={`Ver detalhes da obra ${artwork.title}`}
-        className="relative block aspect-4/5 overflow-hidden bg-green-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange"
+        className="relative block aspect-4/5 overflow-hidden bg-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange"
       >
         <Image
           src={urlFor(artwork.image).width(900).height(1125).fit("crop").url()}
@@ -47,44 +48,43 @@ export default function ArtworkCard({
       </Link>
 
       <div className="p-6 sm:p-7">
-        <div className="flex items-start justify-between gap-4">
-          <h3 className="text-2xl font-semibold leading-snug tracking-tight text-red">
-            <Link
-              href={artworkHref}
-              prefetch={false}
-              className="rounded-sm transition-colors hover:text-orange focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange"
-            >
-              {artwork.title}
-            </Link>
-          </h3>
-          {artwork.year && (
-            <span className="shrink-0 pt-1 text-sm font-semibold text-green">
-              {artwork.year}
-            </span>
-          )}
-        </div>
+        <dl className="space-y-3 text-sm">
+          <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">
+            <dt className="text-red/55">Artista:</dt>
+            <dd className="text-red/80">{artworkArtistName}</dd>
+          </div>
+          <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3">
+            <dt className="pt-1 text-red/55">Título:</dt>
+            <dd>
+              <h3 className="text-2xl font-semibold leading-snug tracking-tight text-red">
+                <Link
+                  href={artworkHref}
+                  prefetch={false}
+                  className="rounded-sm transition-colors hover:text-orange focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange"
+                >
+                  {artwork.title}
+                </Link>
+              </h3>
+            </dd>
+          </div>
+          <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">
+            <dt className="text-red/55">Ano:</dt>
+            <dd className="font-semibold text-green">{artwork.year ?? "—"}</dd>
+          </div>
+          <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">
+            <dt className="text-red/55">Técnica:</dt>
+            <dd className="text-red/80">{artwork.technique || "—"}</dd>
+          </div>
+          <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3">
+            <dt className="text-red/55">Dimensões:</dt>
+            <dd className="text-red/80">{dimensions ?? "—"}</dd>
+          </div>
+        </dl>
 
         {artwork.description && (
-          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-red/65">
+          <p className="mt-5 line-clamp-2 border-t border-red/15 pt-4 text-sm leading-relaxed text-red/65">
             {artwork.description}
           </p>
-        )}
-
-        {(artwork.technique || dimensions) && (
-          <dl className="mt-5 space-y-2 border-t border-red/15 pt-4 text-sm">
-            {artwork.technique && (
-              <div className="flex justify-between gap-4">
-                <dt className="text-red/55">Técnica</dt>
-                <dd className="text-right text-red/80">{artwork.technique}</dd>
-              </div>
-            )}
-            {dimensions && (
-              <div className="flex justify-between gap-4">
-                <dt className="text-red/55">Dimensões</dt>
-                <dd className="text-right text-red/80">{dimensions}</dd>
-              </div>
-            )}
-          </dl>
         )}
 
         <div className="mt-6 flex flex-wrap items-end justify-between gap-4">

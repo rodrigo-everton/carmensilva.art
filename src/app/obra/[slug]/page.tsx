@@ -12,6 +12,7 @@ import ArtworkInterestButton from "@/components/artwork/ArtworkInterestButton"
 import ExpandableDescription from "@/components/artwork/ExpandableDescription"
 import Container from "@/components/ui/Container"
 import {
+  artworkArtistName,
   artworkStatusDetails,
   formatArtworkDimensions,
 } from "@/lib/artwork-display"
@@ -127,15 +128,15 @@ export default async function ArtworkPage({params}: ArtworkPageProps) {
     artwork.status === "available" || artwork.status === "reserved"
       ? "/venda"
       : "/exposicao"
-  const collectionLabel = collectionHref === "/venda" ? "Obras à venda" : "Exposição"
+  const collectionLabel = collectionHref === "/venda" ? "Obras à venda" : "Acervo"
 
   return (
-    <article className="pb-12 pt-6 sm:pb-20 sm:pt-10">
+    <article className="bg-white pb-12 pt-6 sm:pb-20 sm:pt-10">
       <Container>
         <nav aria-label="Navegação estrutural" className="mb-6">
           <Link
             href={collectionHref}
-            className="inline-flex items-center gap-2 rounded-sm text-sm font-semibold text-white transition-colors hover:text-orange-secondary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-green px-5 text-sm font-semibold text-white transition-colors hover:bg-green-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             Voltar para {collectionLabel.toLocaleLowerCase("pt-BR")}
@@ -178,37 +179,40 @@ export default async function ArtworkPage({params}: ArtworkPageProps) {
               )}
             </div>
 
-            <header className="mt-7 border-b border-red/15 pb-7">
-              <h1 className="text-4xl font-semibold leading-tight tracking-tight text-red sm:text-5xl">
-                {artwork.title}
-              </h1>
-              {artwork.year && (
-                <p className="mt-3 text-base font-semibold text-green">
-                  {artwork.year}
-                </p>
-              )}
-            </header>
-
-            {(artwork.technique || dimensions) && (
-              <dl className="space-y-4 border-b border-red/15 py-7 text-sm sm:text-base">
-                {artwork.technique && (
-                  <div className="grid grid-cols-[6rem_1fr] gap-4">
-                    <dt className="text-red/55">Técnica</dt>
-                    <dd className="text-right font-medium text-red/85">
-                      {artwork.technique}
-                    </dd>
-                  </div>
-                )}
-                {dimensions && (
-                  <div className="grid grid-cols-[6rem_1fr] gap-4">
-                    <dt className="text-red/55">Dimensões</dt>
-                    <dd className="text-right font-medium text-red/85">
-                      {dimensions}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            )}
+            <dl className="mt-7 divide-y divide-red/15 border-b border-red/15 text-sm sm:text-base">
+              <div className="grid grid-cols-[6rem_minmax(0,1fr)] gap-4 pb-4">
+                <dt className="text-red/55">Artista:</dt>
+                <dd className="text-right font-medium text-red/85">
+                  {artworkArtistName}
+                </dd>
+              </div>
+              <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-start gap-4 py-5">
+                <dt className="pt-1 text-red/55">Título:</dt>
+                <dd>
+                  <h1 className="text-right text-4xl font-semibold leading-tight tracking-tight text-red sm:text-5xl">
+                    {artwork.title}
+                  </h1>
+                </dd>
+              </div>
+              <div className="grid grid-cols-[6rem_minmax(0,1fr)] gap-4 py-4">
+                <dt className="text-red/55">Ano:</dt>
+                <dd className="text-right font-semibold text-green">
+                  {artwork.year ?? "—"}
+                </dd>
+              </div>
+              <div className="grid grid-cols-[6rem_minmax(0,1fr)] gap-4 py-4">
+                <dt className="text-red/55">Técnica:</dt>
+                <dd className="text-right font-medium text-red/85">
+                  {artwork.technique || "—"}
+                </dd>
+              </div>
+              <div className="grid grid-cols-[6rem_minmax(0,1fr)] gap-4 py-4">
+                <dt className="text-red/55">Dimensões:</dt>
+                <dd className="text-right font-medium text-red/85">
+                  {dimensions ?? "—"}
+                </dd>
+              </div>
+            </dl>
 
             {artwork.description && (
               <section aria-labelledby="descricao-heading" className="py-7">

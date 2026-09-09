@@ -7,7 +7,7 @@ import { SanityLive } from "@/sanity/lib/live";
 
 const siteUrl = getSiteUrl();
 
-const TITLE = "Carmem Silva - Arte";
+const TITLE = "Carmem Silva - Galeria de Arte";
 const NAME = "Carmem Silva Cruz";
 const DESC = "Obras a venda, exposições e trajetória artística de Carmem Silva.";
 

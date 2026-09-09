@@ -1,15 +1,7 @@
-export default function RootLayout({
+export default function VendaLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode
 }>) {
-	return (
-		<html lang="pt-BR">
-			<body>
-				<div className="bg-white">
-					{children}
-				</div>
-			</body>
-		</html>
-	)
+	return <div className="bg-white">{children}</div>
 }

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 const contactLinks = {
-  email: sociaLinks.email,
+  email: `mailto:${sociaLinks.email}`,
   whatsapp: sociaLinks.whatsapp,
 }
 

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
   title: {
     default: TITLE,
-    template: "%s | Carmem Silva - Arte",
+    template: "%s | Carmem Silva - Galeria de Arte",
   },
 
   description: DESC,
